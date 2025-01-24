@@ -1,0 +1,28 @@
+2025-01-24 19:18:42,674 - INFO - File saved successfully: generated_input_dataset_20250124_191842.csv
+2025-01-24 19:18:42,675 - INFO - Dataset with 15000 samples generated and saved to 'generated_input_dataset_20250124_191842.csv'.
+2025-01-24 19:18:42,701 - INFO - File saved successfully: summary_statistics_20250124_191842.csv
+2025-01-24 19:18:42,701 - INFO - Summary statistics saved to 'summary_statistics_20250124_191842.csv'.
+2025-01-24 19:18:42,752 - INFO - File saved successfully: additional_metrics_20250124_191842.csv
+2025-01-24 19:18:42,753 - INFO - Additional metrics saved to 'additional_metrics_20250124_191842.csv'.
+2025-01-24 19:18:42,753 - INFO - Data generation complete with precision and accuracy maintained.
+2025-01-24 19:50:06,891 - INFO - File saved successfully: generated_input_dataset.csv
+2025-01-24 19:50:06,892 - INFO - Dataset with 15000 samples generated and saved to 'generated_input_dataset.csv'.
+2025-01-24 19:50:06,929 - INFO - File saved successfully: summary_statistics.csv
+2025-01-24 19:50:06,930 - INFO - Summary statistics saved to 'summary_statistics.csv'.
+2025-01-24 19:50:07,036 - INFO - File saved successfully: additional_metrics.csv
+2025-01-24 19:50:07,036 - INFO - Additional metrics saved to 'additional_metrics.csv'.
+2025-01-24 19:50:07,036 - INFO - Data generation complete with precision and accuracy maintained.
+2025-01-24 21:22:03,590 - INFO - File saved successfully: generated_input_dataset.csv
+2025-01-24 21:22:03,590 - INFO - Dataset with 15000 samples generated and saved to 'generated_input_dataset.csv'.
+2025-01-24 21:22:03,602 - INFO - File saved successfully: summary_statistics.csv
+2025-01-24 21:22:03,603 - INFO - Summary statistics saved to 'summary_statistics.csv'.
+2025-01-24 21:22:03,639 - INFO - File saved successfully: additional_metrics.csv
+2025-01-24 21:22:03,639 - INFO - Additional metrics saved to 'additional_metrics.csv'.
+2025-01-24 21:22:03,639 - INFO - Data generation complete with precision and accuracy maintained.
+2025-01-24 21:30:24,789 - INFO - File saved successfully: generated_input_dataset.csv
+2025-01-24 21:30:24,789 - INFO - Dataset with 15000 samples generated and saved to 'generated_input_dataset.csv'.
+2025-01-24 21:30:24,815 - INFO - File saved successfully: summary_statistics.csv
+2025-01-24 21:30:24,815 - INFO - Summary statistics saved to 'summary_statistics.csv'.
+2025-01-24 21:30:24,882 - INFO - File saved successfully: additional_metrics.csv
+2025-01-24 21:30:24,882 - INFO - Additional metrics saved to 'additional_metrics.csv'.
+2025-01-24 21:30:24,882 - INFO - Data generation complete with precision and accuracy maintained.
