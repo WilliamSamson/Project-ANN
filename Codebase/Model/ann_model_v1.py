@@ -21,15 +21,45 @@ data = pd.read_csv('/home/kayode-olalere/PycharmProjects/Project ANN/Codebase/Da
 X = data[["Frequency (GHz)", "W1 (mm)", "L1 (mm)", "D1 (mm)", "W2 (mm)", "L2 (mm)"]].values
 
 # Generate synthetic target values (S1, S2)
-f = X[:, 0]
-W1 = X[:, 1]
-L1 = X[:, 2]
-W2 = X[:, 4]
-substrate_thickness = np.random.uniform(0.1, 3.0, size=f.shape)  # Example for random substrate thickness
+# Generate synthetic target values (S1, S2)
+import numpy as np
 
-S1 = 10 - (W1 + L1) * f + np.random.normal(0, 0.1, size=f.shape)  # Add random noise
-S2 = -60 + (W2 * np.log(f + 1)) - substrate_thickness + np.random.normal(0, 0.1, size=f.shape)  # Add random noise
-y = np.stack((S1, S2), axis=1)  # Combine targets (S1, S2) for regression task
+# Example input feature matrix X
+# Columns: Frequency (f), W1, L1, D1, W2, L2
+X = np.random.uniform(0.1, 5.0, size=(100, 6))  # Generate random data for 100 samples
+
+f = X[:, 0]  # Frequency
+W1 = X[:, 1]  # Width 1
+L1 = X[:, 2]  # Length 1
+D1 = X[:, 3]  # Gap (D1)
+W2 = X[:, 4]  # Width 2
+L2 = X[:, 5]  # Length 2
+
+# Coefficients for the synthetic formula
+k1, k2, k3, k4, k5, k6, k7 = 0.5, 3.0, 0.8, 2.5, 1.2, 0.1, 5.0
+
+# Calculate S1 and S2 using the proposed formula
+S1 = (
+    k1 * f +
+    k2 * (1 / np.sqrt(W1 * L1)) +
+    k3 * D1 +
+    k4 * (1 / W2) +
+    k5 * L2 +
+    k6 * f * (D1 / W1) +
+    k7 +
+    np.random.normal(0, 0.1, size=f.shape)  # Add random noise
+)
+
+S2 = (
+    -60 +
+    k4 * np.log(f + 1) +
+    k3 * D1 -
+    np.random.uniform(0.1, 3.0, size=f.shape) +  # Random substrate thickness effect
+    np.random.normal(0, 0.1, size=f.shape)  # Add random noise
+)
+
+# Combine targets (S1, S2) for regression task
+y = np.stack((S1, S2), axis=1)
 
 # Split dataset into training, testing, and validation sets
 X_train, X_temp, y_train, y_temp = train_test_split(X, y, test_size=0.3, random_state=42)
