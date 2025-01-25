@@ -1,0 +1,116 @@
+
+
+# Advanced Neural Network for Predicting S1 and S2
+
+## **Overview**
+This code implements an advanced artificial neural network (ANN) to predict two target outputs (`S1` and `S2`) based on six input features extracted from a dataset. It includes data preprocessing, model training, evaluation, and predictions on new data, incorporating advanced techniques such as batch normalization, dropout, and callbacks for improved performance and generalization.
+
+---
+
+## **Key Components**
+### **1. Dependencies**
+- **NumPy and Pandas:** For numerical operations and data manipulation.
+- **TensorFlow and Keras:** For building and training the ANN.
+- **Scikit-learn:** For data splitting, scaling, and performance evaluation.
+- **Matplotlib:** For visualization of results.
+
+### **2. Reproducibility**
+- Random seeds are set for both NumPy and TensorFlow to ensure consistent results.
+
+---
+
+## **Data Handling**
+### **1. Data Sources**
+- Training data: Loaded from `Formatted_Training_Data.csv`.
+- New data for predictions: Loaded from `generated_input_dataset.csv`.
+
+### **2. Features and Targets**
+- **Features (Inputs):** 
+  - `"Frequency (GHz)", "W1 (mm)", "L1 (mm)", "D1 (mm)", "W2 (mm)", "L2 (mm)"`.
+- **Targets (Outputs):** 
+  - `"S1", "S2"`.
+
+### **3. Splitting the Data**
+- The dataset is split into:
+  - **Training set:** 70% of the data.
+  - **Validation set:** 20% of the data (split from the remaining 30%).
+  - **Test set:** 10% of the data.
+
+### **4. Scaling**
+- A `StandardScaler` is applied to standardize the input features (mean = 0, standard deviation = 1).
+
+---
+
+## **Model Architecture**
+The ANN is a sequential model with the following layers:
+1. Input layer: Dense with 256 neurons, L2 regularization, batch normalization, LeakyReLU activation, and dropout (50%).
+2. Hidden layer: Dense with 512 neurons, L2 regularization, batch normalization, LeakyReLU activation, and dropout (50%).
+3. Hidden layer: Dense with 256 neurons, L2 regularization, batch normalization, LeakyReLU activation, and dropout (50%).
+4. Output layer: Dense with 2 neurons (predicts `S1` and `S2`).
+
+### **Loss Function**
+- Huber loss: Combines mean squared error and mean absolute error for robustness to outliers.
+
+### **Optimizer**
+- Adam optimizer with a learning rate of 0.001.
+
+### **Regularization**
+- L2 regularization is used to prevent overfitting.
+
+---
+
+## **Training Process**
+### **1. Callbacks**
+- **EarlyStopping:** Stops training when validation loss does not improve for 20 epochs.
+- **ReduceLROnPlateau:** Reduces learning rate when validation loss stagnates.
+- **ModelCheckpoint:** Saves the model with the best validation loss.
+
+### **2. Epochs and Batch Size**
+- The model is trained for up to 1000 epochs with a batch size of 16.
+
+### **3. Validation**
+- The model's performance is monitored on the validation set during training.
+
+---
+
+## **Evaluation and Metrics**
+- **Test Metrics:** 
+  - Mean Squared Error (MSE)
+  - Mean Absolute Error (MAE)
+  - R-squared (R²)
+- **Visualization:** A scatter plot compares predicted vs actual values for `S1` and `S2`.
+
+---
+
+## **Predictions**
+- New data from `generated_input_dataset.csv` is scaled using the same scaler from training.
+- Predictions are made for `S1` and `S2`, and the results are saved to `generated_output_dataset_advanced.csv`.
+
+---
+
+## **K-Fold Cross-Validation**
+- The model's robustness is evaluated using 5-fold cross-validation.
+- Metrics (MSE and R²) are computed for each fold and averaged.
+
+---
+
+## **Outputs**
+1. **Model File:** Best model saved as `best_model_advanced.h5`.
+2. **Prediction Plot:** Scatter plot saved as `predictions_vs_actual.png`.
+3. **Generated Dataset:** Predictions saved to `generated_output_dataset_advanced.csv`.
+
+---
+
+## **How to Use**
+1. Place the training data (`Formatted_Training_Data.csv`) and the new dataset (`generated_input_dataset.csv`) in their respective paths.
+2. Run the script to train the model, evaluate it, and generate predictions.
+3. Check the output files (`best_model_advanced.h5`, `predictions_vs_actual.png`, and `generated_output_dataset_advanced.csv`) for results.
+
+---
+
+### **Advanced Techniques**
+- **Batch Normalization:** Speeds up training and improves stability.
+- **LeakyReLU Activation:** Prevents dying neurons by allowing small gradients for negative inputs.
+- **Dropout:** Reduces overfitting by randomly dropping neurons during training.
+- **Huber Loss:** Balances sensitivity to outliers.
+

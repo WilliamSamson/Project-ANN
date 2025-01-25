@@ -20,8 +20,8 @@ logging.basicConfig(
 # Function to parse command-line arguments
 def parse_args():
     parser = argparse.ArgumentParser(description="Generate random dataset with specified parameters.")
-    parser.add_argument("--samples", type=int, default=15000, help="Number of samples to generate (default: 15000).")
-    parser.add_argument("--precision", type=int, default=4, help="Decimal precision for values (default: 4).")
+    parser.add_argument("--samples", type=int, default=20000, help="Number of samples to generate (default: 15000).")
+    parser.add_argument("--precision", type=int, default=2, help="Decimal precision for values (default: 4).")
     parser.add_argument(
         "--distribution",
         type=str,

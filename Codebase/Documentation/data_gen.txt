@@ -1,134 +1,146 @@
-### Explanation of Exhibit A Code for an Entry-Level Python Programmer
+# Documentation for Parallelized Random Dataset Generation Script
 
-This script is designed to **generate random data**, save it as a **CSV file**, and compute **summary statistics**. Here’s a step-by-step explanation:
-
----
-
-### 1. **Importing Libraries**
-```python
-import numpy as np
-import pandas as pd
-from datetime import datetime
-```
-- **`numpy` (`np`)**: Used to generate random numbers.
-- **`pandas` (`pd`)**: Used to organize the data into a table-like structure (DataFrame) and save it as a file.
-- **`datetime`**: Used to create unique timestamps for filenames.
+This documentation explains the structure and functionality of the script, which generates random datasets based on specified parameters. The script supports both uniform and Gaussian distributions, uses parallelism for efficiency, and computes descriptive statistics.
 
 ---
 
-### 2. **Setting Constants**
-```python
-SEED = 42
-np.random.seed(SEED)
-```
-- A **seed** ensures that the random numbers generated are the same every time you run the script, making results reproducible.
+## **Overview**
 
-```python
-NUM_SAMPLES = 15000  # Number of rows (samples) to generate
-```
-- Specifies how many rows of data to create.
+### **Purpose:**
+The script generates synthetic datasets with user-defined parameters for simulation, modeling, or training purposes. It:
+1. Allows for flexible customization of sample size, decimal precision, and data distribution.
+2. Utilizes parallel processing for efficiency.
+3. Saves datasets and metrics (e.g., skewness, kurtosis) as CSV files.
 
----
-
-### 3. **Defining Parameter Ranges**
-```python
-PARAMETER_RANGES = {
-    "Frequency (GHz)": (0.5, 5.0),
-    "W1 (mm)": (0.1, 5.0),
-    "L1 (mm)": (0.5, 20.0),
-    "D1 (mm)": (0.1, 2.0),
-    "W2 (mm)": (0.1, 5.0),
-    "L2 (mm)": (0.5, 20.0),
-}
-```
-- A dictionary where each **parameter name** (e.g., "Frequency (GHz)") has a **range** (e.g., 0.5 to 5.0). These ranges define the minimum and maximum values for the random data.
-
-```python
-USE_GAUSSIAN = False  # Set to True to use Gaussian distribution
-```
-- **Uniform distribution**: Random numbers spread evenly across the range.
-- **Gaussian distribution**: Random numbers follow a bell-shaped curve, clustering around the center.
+### **Features:**
+- Supports **uniform** and **Gaussian** distributions.
+- Parallelized generation for faster computation.
+- Computes summary statistics and additional metrics like skewness and kurtosis.
+- Saves output in organized, timestamped CSV files.
 
 ---
 
-### 4. **Generating Random Data**
-```python
-def generate_random_data(num_samples, parameter_ranges, use_gaussian, precision=4):
-```
-- A function to **generate random values** for each parameter.
+## **Key Components**
 
-**How it works:**
-1. **Inputs**: Number of samples, parameter ranges, choice of distribution, and decimal precision.
-2. **Random Value Generation**:
-   - If `use_gaussian` is `True`, values follow a **Gaussian distribution** (centered around the midpoint of the range).
-   - Otherwise, values are drawn from a **uniform distribution**.
-3. **Clipping**: Ensures values stay within the specified range (important for Gaussian).
-4. **Rounding**: Values are rounded to the specified number of decimal places.
+### **Dependencies**
+- **NumPy:** For numerical operations.
+- **Pandas:** For data handling and CSV management.
+- **Scipy.stats:** For skewness and kurtosis calculations.
+- **Statistics:** For computing mode.
+- **Joblib:** For parallel processing.
+- **Argparse:** For command-line arguments.
+- **Logging:** For detailed execution logs.
+
+### **Command-line Arguments**
+- `--samples`: Number of data samples to generate (default: 20,000).
+- `--precision`: Decimal precision for values (default: 2).
+- `--distribution`: Data distribution type, either "uniform" or "gaussian" (default: "uniform").
 
 Example:
-- For "Frequency (GHz)" with a range (0.5, 5.0), random numbers are generated between 0.5 and 5.0.
+```bash
+python generate_dataset.py --samples 10000 --precision 3 --distribution gaussian
+```
 
 ---
 
-### 5. **Saving Data as CSV**
-```python
-def save_csv(dataframe, filename_prefix):
-```
-- Saves the data as a **CSV file** (a format similar to Excel).
+## **Detailed Steps**
 
-**How it works:**
-1. The `filename_prefix` is combined with the **current timestamp** to create a unique filename (e.g., `generated_input_dataset_20250124_123456.csv`).
-2. The **DataFrame** is saved to this file.
+### **1. Parse Command-line Arguments**
+The script uses `argparse` to allow customization of parameters. It validates the inputs and provides default values for missing arguments.
+
+### **2. Configure Logging**
+Logs are written to both a console and a file (`data_generation.log`) for easy debugging and tracking.
+
+### **3. Define Parameter Ranges**
+- `PARAMETER_RANGES` contains the lower and upper bounds for each parameter:
+  ```python
+  PARAMETER_RANGES = {
+      "Frequency (GHz)": (0.5, 5.0),
+      "W1 (mm)": (0.1, 5.0),
+      "L1 (mm)": (0.5, 10.0),
+      ...
+  }
+  ```
+
+### **4. Generate Data in Parallel**
+The `generate_data_parallel()` function generates random values for each parameter.
+
+- **Uniform Distribution:** Uses `np.random.uniform(low, high, num_samples)`.
+- **Gaussian Distribution:**
+  - Mean: `(low + high) / 2`.
+  - Standard deviation: `(high - low) / 6` (for 99.7% values within range).
+  - Out-of-range values are clipped to the parameter range.
+
+Parallelism is achieved using `joblib.Parallel`.
+
+Example:
+```python
+results = Parallel(n_jobs=-1)(
+    delayed(generate_param)(param, low, high) for param, (low, high) in parameter_ranges.items()
+)
+```
+
+### **5. Create and Save the Dataset**
+The generated data is stored in a Pandas DataFrame. An `ID` column is added to uniquely identify samples. The dataset is saved as `generated_input_dataset.csv`.
+
+### **6. Compute Summary Statistics**
+The `DataFrame.describe()` method is used to calculate standard summary metrics like mean, min, max, and standard deviation. The results are saved as `summary_statistics.csv`.
+
+### **7. Compute Additional Metrics**
+The `compute_additional_metrics()` function calculates:
+- **Skewness:** Measure of symmetry in data distribution.
+- **Kurtosis:** Measure of data "tailedness."
+- **Mode:** Most frequent value.
+
+The metrics are saved as `additional_metrics.csv`.
+
+### **8. Error Handling**
+- Invalid sample size or parameter ranges raise exceptions.
+- File save errors are logged with detailed information.
 
 ---
 
-### 6. **Putting It All Together**
-```python
-random_data = generate_random_data(NUM_SAMPLES, PARAMETER_RANGES, USE_GAUSSIAN)
-```
-- Generates random data using the `generate_random_data` function.
+## **Output Files**
 
-```python
-dataset = pd.DataFrame(random_data)
-dataset.insert(0, "ID", range(1, NUM_SAMPLES + 1))
-```
-- Converts the random data into a **DataFrame** (a table with rows and columns).
-- Adds a unique **ID column** starting from 1.
+1. **Generated Dataset:**
+   File: `generated_input_dataset.csv`
+   - Contains generated samples with specified parameters.
+   - Columns: `ID`, `Frequency (GHz)`, `W1 (mm)`, etc.
 
-```python
-output_filename = save_csv(dataset, "generated_input_dataset")
-```
-- Saves the data to a CSV file with the prefix `"generated_input_dataset"`.
+2. **Summary Statistics:**
+   File: `summary_statistics.csv`
+   - Includes count, mean, std, min, max, and quantiles for each parameter.
+
+3. **Additional Metrics:**
+   File: `additional_metrics.csv`
+   - Includes skewness, kurtosis, and mode for each parameter.
 
 ---
 
-### 7. **Calculating Summary Statistics**
-```python
-summary_stats = dataset.describe().T
+## **Sample Execution Logs**
+Example log messages generated by the script:
 ```
-- Calculates **summary statistics** (e.g., mean, min, max) for each parameter.
-
-```python
-summary_stats_output = save_csv(summary_stats, "summary_statistics")
+2025-01-25 12:00:01 - INFO - Dataset with 20000 samples generated and saved to 'generated_input_dataset.csv'.
+2025-01-25 12:00:02 - INFO - Summary statistics saved to 'summary_statistics.csv'.
+2025-01-25 12:00:03 - INFO - Additional metrics saved to 'additional_metrics.csv'.
+2025-01-25 12:00:03 - INFO - Data generation complete with precision and accuracy maintained.
 ```
-- Saves the statistics to another CSV file.
 
 ---
 
-### 8. **Print Statements**
-```python
-print(f"Dataset with {NUM_SAMPLES} samples generated and saved to '{output_filename}'.")
-print(f"Summary statistics saved to '{summary_stats_output}'.")
-print("Data generation complete with precision and accuracy maintained.")
-```
-- Outputs confirmation messages to the user.
+## **Notes **
 
----
+1. **Parallel Processing:**
+   The script leverages parallelism for faster data generation, especially with large sample sizes.
 
-### Key Takeaways for Entry-Level Programmers:
-1. **Functions**: Break the task into smaller, reusable chunks.
-2. **Random Data**: Use `numpy` for generating random numbers with control over distribution and range.
-3. **DataFrames**: Use `pandas` to organize and save data efficiently.
-4. **Reproducibility**: Use a seed for consistent results.
+2. **Gaussian Clipping:**
+   Gaussian values are clipped to avoid exceeding parameter bounds, which might lead to distribution skew.
 
-Let me know if you'd like to dive deeper into any part!
+3. **Precision and Customization:**
+   Users can control decimal precision, sample size, and the type of distribution via command-line arguments.
+
+4. **Validation:**
+   The script ensures parameter ranges are valid and sample sizes are greater than zero.
+
+5. **File Management:**
+   Output files are timestamped for traceability and stored in the working directory.
