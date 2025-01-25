@@ -4,7 +4,7 @@ from tensorflow.keras.models import load_model
 from sklearn.preprocessing import StandardScaler
 
 # Step 1: Load the trained model
-model = load_model("/home/kayode-olalere/PycharmProjects/Project ANN/Codebase/Model/VER_2/best_model.h5")
+model = load_model("/home/kayode-olalere/PycharmProjects/Project ANN/Codebase/Model/VER_2/best_model_advanced.h5")
 
 # Step 2: Load training data to fit the scaler
 training_data_path = '/home/kayode-olalere/PycharmProjects/Project ANN/Model/Formatted_Training_Data.csv'
@@ -19,7 +19,7 @@ scaler = StandardScaler()
 scaler.fit(X_train)  # Fit the scaler on the input features
 
 # Step 4: Define new input data (with 6 features)
-new_data = np.array([[1.903,4.6,4.2,6.2,0.1,8]])  # 6 features, adjusted
+new_data = np.array([[1.881,4.6,4.2,6.1,0.2,7.6]])  # 6 features, adjusted
 
 # Scale the new data
 new_data_scaled = scaler.transform(new_data)

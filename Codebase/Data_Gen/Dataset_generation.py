@@ -118,10 +118,10 @@ if __name__ == "__main__":
     PARAMETER_RANGES = {
         "Frequency (GHz)": (0.5, 5.0),  # GHz
         "W1 (mm)": (0.1, 5.0),  # mm (width 1)
-        "L1 (mm)": (0.5, 20.0),  # mm (length 1)
+        "L1 (mm)": (0.5, 10.0),  # mm (length 1)
         "D1 (mm)": (0.1, 2.0),  # mm (distance or spacing)
         "W2 (mm)": (0.1, 5.0),  # mm (width 2)
-        "L2 (mm)": (0.5, 20.0),  # mm (length 2)
+        "L2 (mm)": (0.5, 10.0),  # mm (length 2)
     }
 
     # Validate input parameters
