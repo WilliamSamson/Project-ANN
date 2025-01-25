@@ -15,7 +15,7 @@ np.random.seed(42)
 tf.random.set_seed(42)
 
 # Load the dataset
-data = pd.read_csv('/home/kayode-olalere/PycharmProjects/Project ANN/Codebase/Data_Gen/generated_input_dataset.csv')  # Adjust path
+data = pd.read_csv('/Codebase/Data_Gen/generated_input_dataset.csv')  # Adjust path
 
 # Extract input features (W1, L1, Frequency, etc.)
 X = data[["Frequency (GHz)", "W1 (mm)", "L1 (mm)", "D1 (mm)", "W2 (mm)", "L2 (mm)"]].values

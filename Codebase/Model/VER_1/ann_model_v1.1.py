@@ -18,7 +18,7 @@ tf.random.set_seed(42)
 
 # Load the dataset
 data = pd.read_csv(
-    '/home/kayode-olalere/PycharmProjects/Project ANN/Model/Formatted_Training_Data.csv')  # Adjust path
+    '/Model/Formatted_Training_Data.csv')  # Adjust path
 
 # Extract input features (W1, L1, Frequency, etc.)
 X = data[["Frequency (GHz)", "W1 (mm)", "L1 (mm)", "D1 (mm)", "W2 (mm)", "L2 (mm)"]].values
@@ -88,7 +88,7 @@ optimizer = Adam(learning_rate=0.001)
 model.compile(optimizer=optimizer, loss='mean_squared_error')
 
 # Define callbacks for optimization and monitoring
-log_dir = os.path.join("logs", "fit")
+log_dir = os.path.join("../logs", "fit")
 tensorboard_callback = TensorBoard(log_dir=log_dir, histogram_freq=1)
 early_stopping = EarlyStopping(monitor='val_loss', patience=50, restore_best_weights=True, verbose=1)
 reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=20, min_lr=1e-6, verbose=1)

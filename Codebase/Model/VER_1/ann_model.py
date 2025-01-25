@@ -11,7 +11,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
 # Load the dataset
-data = pd.read_csv('/home/kayode-olalere/PycharmProjects/Project ANN/Codebase/Data_Gen/generated_input_dataset.csv')  # Adjust with your actual file path
+data = pd.read_csv('/Codebase/Data_Gen/generated_input_dataset.csv')  # Adjust with your actual file path
 
 # Extract input features (W1, L1, Frequency, etc.)
 X = data[["Frequency (GHz)", "W1 (mm)", "L1 (mm)", "D1 (mm)", "W2 (mm)", "L2 (mm)"]].values
