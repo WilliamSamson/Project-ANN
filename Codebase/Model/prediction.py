@@ -19,7 +19,7 @@ scaler = StandardScaler()
 scaler.fit(X_train)  # Fit the scaler on the input features
 
 # Step 4: Define new input data (with 6 features)
-new_data = np.array([[1.29,4.53,3.9,0.21,0.49,3.71]])  # 6 features, adjusted
+new_data = np.array([[2.29,4.53,3.9,0.21,0.49,3.71]])  # 6 features, adjusted
 
 # Scale the new data
 new_data_scaled = scaler.transform(new_data)

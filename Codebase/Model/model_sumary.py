@@ -30,7 +30,7 @@ model = load_model(model_path)
 print("Model loaded successfully.")
 
 # Export the model summary to a file
-model_summary_path = os.path.join(output_dir, "model_summary.txt.txt")
+model_summary_path = os.path.join(output_dir, "model_summary.txt")
 with open(model_summary_path, "w") as f:
     model.summary(print_fn=lambda x: f.write(x + "\n"))
 print(f"Model summary saved to {model_summary_path}")

@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, BatchNormalization, Dropout, LeakyReLU
+from tensorflow.keras.layers import Dense, BatchNormalization, Dropout, LeakyReLU, Input
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCheckpoint
 from sklearn.model_selection import train_test_split, KFold
@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 np.random.seed(42)
 tf.random.set_seed(42)
 
+# File paths
 training_data_path = '/home/kayode-olalere/PycharmProjects/Project ANN/Model/Formatted_Training_Data.csv'
 generated_data_path = '/home/kayode-olalere/PycharmProjects/Project ANN/Codebase/Data_Gen/generated_input_dataset.csv'
 
@@ -21,8 +22,8 @@ generated_data_path = '/home/kayode-olalere/PycharmProjects/Project ANN/Codebase
 data = pd.read_csv(training_data_path)
 
 # Extract features and targets
-X = data[["Frequency (GHz)", "W1 (mm)", "L1 (mm)", "D1 (mm)", "W2 (mm)", "L2 (mm)"]].values
-y = data[["S1", "S2"]].values
+X = data[["Frequency (GHz)", "W1 (mm)", "L1 (mm)", "D1 (mm)", "W2 (mm)", "L2 (mm)"]].values.astype('float32')
+y = data[["S1", "S2"]].values.astype('float32')
 
 # Split data into training, validation, and testing sets
 X_train, X_temp, y_train, y_temp = train_test_split(X, y, test_size=0.3, random_state=42)
@@ -34,23 +35,13 @@ X_train_scaled = scaler.fit_transform(X_train)
 X_val_scaled = scaler.transform(X_val)
 X_test_scaled = scaler.transform(X_test)
 
-# Build the ANN model with further improvements
+# Build the ANN model
 model = Sequential([
-    Dense(256, input_dim=X_train_scaled.shape[1], kernel_regularizer=tf.keras.regularizers.l2(0.001)),
-    BatchNormalization(),
-    LeakyReLU(alpha=0.1),
-    Dropout(0.5),
-
-    Dense(512, kernel_regularizer=tf.keras.regularizers.l2(0.001)),
-    BatchNormalization(),
-    LeakyReLU(alpha=0.1),
-    Dropout(0.5),
-
+    Input(shape=(X_train_scaled.shape[1],)),
     Dense(256, kernel_regularizer=tf.keras.regularizers.l2(0.001)),
     BatchNormalization(),
-    LeakyReLU(alpha=0.1),
+    LeakyReLU(negative_slope=0.1),
     Dropout(0.5),
-
     Dense(2)  # Predict S1 and S2
 ])
 
@@ -97,7 +88,7 @@ plt.savefig('predictions_vs_actual.png')
 
 # Predict outputs for new dataset
 generated_data = pd.read_csv(generated_data_path)
-X_generated = generated_data[["Frequency (GHz)", "W1 (mm)", "L1 (mm)", "D1 (mm)", "W2 (mm)", "L2 (mm)"]].values
+X_generated = generated_data[["Frequency (GHz)", "W1 (mm)", "L1 (mm)", "D1 (mm)", "W2 (mm)", "L2 (mm)"]].values.astype('float32')
 X_generated_scaled = scaler.transform(X_generated)  # Use same scaler as during training
 
 # Predict S1 and S2
@@ -131,3 +122,4 @@ for train_index, test_index in kf.split(X):
 
 print(f"Average MSE (K-Fold): {np.mean(mse_scores)}")
 print(f"Average R2 (K-Fold): {np.mean(r2_scores)}")
+
