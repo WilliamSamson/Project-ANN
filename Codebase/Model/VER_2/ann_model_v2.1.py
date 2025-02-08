@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 np.random.seed(42)
 tf.random.set_seed(42)
 
-training_data_path = '/home/kayode-olalere/PycharmProjects/Project ANN/Model/Formatted_Training_Data.csv'
+training_data_path = '/Training_set/Formatted_Training_Data.csv'
 generated_data_path = '/home/kayode-olalere/PycharmProjects/Project ANN/Codebase/Data_Gen/generated_input_dataset.csv'
 
 # Load training dataset

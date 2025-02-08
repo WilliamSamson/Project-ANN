@@ -18,7 +18,7 @@ tf.random.set_seed(42)
 
 # Load the dataset
 data = pd.read_csv(
-    '/Model/Formatted_Training_Data.csv')  # Adjust path
+    '/Training_set/Formatted_Training_Data.csv')  # Adjust path
 
 # Extract input features (W1, L1, Frequency, etc.)
 X = data[["Frequency (GHz)", "W1 (mm)", "L1 (mm)", "D1 (mm)", "W2 (mm)", "L2 (mm)"]].values

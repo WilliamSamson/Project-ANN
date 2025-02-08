@@ -23,22 +23,22 @@ os.makedirs(output_dir, exist_ok=True)
 
 # Check if the model file exists
 if not os.path.exists(model_path):
-    raise FileNotFoundError(f"Model file not found at {model_path}")
+    raise FileNotFoundError(f"Training_set file not found at {model_path}")
 
 # Load the model
 model = load_model(model_path)
-print("Model loaded successfully.")
+print("Training_set loaded successfully.")
 
 # Export the model summary to a file
 model_summary_path = os.path.join(output_dir, "model_summary.txt")
 with open(model_summary_path, "w") as f:
     model.summary(print_fn=lambda x: f.write(x + "\n"))
-print(f"Model summary saved to {model_summary_path}")
+print(f"Training_set summary saved to {model_summary_path}")
 
 # Save a visualization of the model architecture
 plot_path = os.path.join(output_dir, "model_architecture.png")
 plot_model(model, to_file=plot_path, show_shapes=True, show_layer_names=True)
-print(f"Model architecture saved as {plot_path}")
+print(f"Training_set architecture saved as {plot_path}")
 
 # Optional: Evaluate the model on a test set
 def evaluate_model(model, test_data, test_labels, output_file):
@@ -46,7 +46,7 @@ def evaluate_model(model, test_data, test_labels, output_file):
     metrics = {metric: value for metric, value in zip(model.metrics_names, results)}
     with open(output_file, "w") as f:
         json.dump(metrics, f, indent=4)
-    print(f"Model evaluation results saved to {output_file}")
+    print(f"Training_set evaluation results saved to {output_file}")
     return metrics
 
 # Optional: Make predictions

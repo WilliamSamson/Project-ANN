@@ -21,7 +21,7 @@ logging.basicConfig(
 def parse_args():
     parser = argparse.ArgumentParser(description="Generate random dataset with specified parameters.")
     parser.add_argument("--samples", type=int, default=15000, help="Number of samples to generate (default: 15000).")
-    parser.add_argument("--precision", type=int, default=2, help="Decimal precision for values (default: 4).")
+    parser.add_argument("--precision", type=int, default=2, help="Decimal precision for values (default: 2).")
     parser.add_argument(
         "--distribution",
         type=str,
@@ -30,6 +30,17 @@ def parse_args():
         help="Type of distribution to use (default: uniform).",
     )
     return parser.parse_args()
+
+# Function to format frequency values
+def format_frequency(val, precision):
+    """
+    Convert a frequency value (in GHz) to a formatted string.
+    If less than 1.0 GHz, it is converted to MHz.
+    """
+    if val < 1.0:
+        return f"{val * 1000:.{precision}f} MHz"
+    else:
+        return f"{val:.{precision}f} GHz"
 
 # Function to generate random data using parallelism
 def generate_data_parallel(parameter_ranges, num_samples, use_gaussian, precision):
@@ -48,7 +59,7 @@ def generate_data_parallel(parameter_ranges, num_samples, use_gaussian, precisio
     def generate_param(param, low, high):
         if use_gaussian:
             mean = (low + high) / 2
-            std_dev = (high - low) / 6
+            std_dev = (high - low) / 6  # ~99.7% of data within [low, high]
             values = np.random.normal(mean, std_dev, num_samples)
             clipped_count = np.sum((values < low) | (values > high))
             if clipped_count > 0:
@@ -56,7 +67,12 @@ def generate_data_parallel(parameter_ranges, num_samples, use_gaussian, precisio
             values = np.clip(values, low, high)
         else:
             values = np.random.uniform(low, high, num_samples)
-        return np.round(values, precision)
+        # Round numeric values first
+        values = np.round(values, precision)
+        # If the parameter is "freq", format the values as strings with units.
+        if param == "freq":
+            values = np.vectorize(lambda x: format_frequency(x, precision))(values)
+        return values
 
     results = Parallel(n_jobs=-1)(
         delayed(generate_param)(param, low, high) for param, (low, high) in parameter_ranges.items()
@@ -73,14 +89,8 @@ def save_csv(dataframe, filename_prefix):
         filename_prefix (str): Prefix for the file name.
 
     Returns:
-        str: The full filename of the saved CSV, with a timestamp appended.
-
-    Raises:
-        IOError: If the file cannot be saved.
+        str: The full filename of the saved CSV.
     """
-   # timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-
-    #filename = f"{filename_prefix}_{timestamp}.csv"
     filename = f"{filename_prefix}.csv"
     try:
         dataframe.to_csv(filename, index=False)
@@ -102,11 +112,12 @@ def compute_additional_metrics(dataframe):
         pd.DataFrame: DataFrame with additional metrics.
     """
     metrics = {}
-    for column in dataframe.columns[1:]:  # Skip "ID"
+    # Skip the "ID" column (assumed to be the first column)
+    for column in dataframe.columns[1:]:
         metrics[column] = {
-            "Skewness": skew(dataframe[column]),
-            "Kurtosis": kurtosis(dataframe[column]),
-            "Mode": statistics.mode(dataframe[column]),
+            "Skewness": skew(dataframe[column]) if dataframe[column].dtype != object else None,
+            "Kurtosis": kurtosis(dataframe[column]) if dataframe[column].dtype != object else None,
+            "Mode": statistics.mode(dataframe[column]) if dataframe[column].dtype != object else None,
         }
     return pd.DataFrame(metrics).T
 
@@ -114,14 +125,15 @@ def compute_additional_metrics(dataframe):
 if __name__ == "__main__":
     args = parse_args()
 
-    # Parameter ranges
+    # Updated parameter ranges and headers (excluding s1 and s2)
     PARAMETER_RANGES = {
-        "Frequency (GHz)": (0.5, 5.0),  # GHz
-        "W1 (mm)": (0.1, 5.0),  # mm (width 1)
-        "L1 (mm)": (0.5, 10.0),  # mm (length 1)
-        "D1 (mm)": (0.1, 2.0),  # mm (distance or spacing)
-        "W2 (mm)": (0.1, 5.0),  # mm (width 2)
-        "L2 (mm)": (0.5, 10.0),  # mm (length 2)
+        "l_s": (5.5, 6.5),    # e.g., length start (mm)
+        "l_2": (6.5, 7.5),    # e.g., secondary length (mm)
+        "l_1": (6.5, 7.5),    # e.g., primary length (mm)
+        "w_s": (0.5, 0.7),    # e.g., width start (mm)
+        "w_2": (0.4, 0.6),    # e.g., secondary width (mm)
+        "w_1": (0.1, 0.3),    # e.g., primary width (mm)
+        "freq": (0.8, 4.0)    # Frequency in GHz
     }
 
     # Validate input parameters
