@@ -61,3 +61,17 @@
 2025-02-08 11:35:19,310 - INFO - File saved successfully: additional_metrics.csv
 2025-02-08 11:35:19,310 - INFO - Additional metrics saved to 'additional_metrics.csv'.
 2025-02-08 11:35:19,311 - INFO - Data generation complete with precision and accuracy maintained.
+2025-02-11 13:08:29,041 - INFO - File saved successfully: generated_input_dataset.csv
+2025-02-11 13:08:29,043 - INFO - Dataset with 15000 samples generated and saved to 'generated_input_dataset.csv'.
+2025-02-11 13:08:29,064 - INFO - File saved successfully: summary_statistics.csv
+2025-02-11 13:08:29,064 - INFO - Summary statistics saved to 'summary_statistics.csv'.
+2025-02-11 13:08:29,107 - INFO - File saved successfully: additional_metrics.csv
+2025-02-11 13:08:29,107 - INFO - Additional metrics saved to 'additional_metrics.csv'.
+2025-02-11 13:08:29,107 - INFO - Data generation complete with precision and accuracy maintained.
+2025-02-11 13:09:16,834 - INFO - File saved successfully: generated_input_dataset.csv
+2025-02-11 13:09:16,834 - INFO - Dataset with 15000 samples generated and saved to 'generated_input_dataset.csv'.
+2025-02-11 13:09:16,856 - INFO - File saved successfully: summary_statistics.csv
+2025-02-11 13:09:16,856 - INFO - Summary statistics saved to 'summary_statistics.csv'.
+2025-02-11 13:09:16,899 - INFO - File saved successfully: additional_metrics.csv
+2025-02-11 13:09:16,899 - INFO - Additional metrics saved to 'additional_metrics.csv'.
+2025-02-11 13:09:16,899 - INFO - Data generation complete with precision and accuracy maintained.

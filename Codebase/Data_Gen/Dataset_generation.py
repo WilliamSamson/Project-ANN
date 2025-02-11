@@ -125,7 +125,7 @@ def compute_additional_metrics(dataframe):
 if __name__ == "__main__":
     args = parse_args()
 
-    # Updated parameter ranges and headers (excluding s1 and s2)
+    # Updated parameter ranges and headers (including s1 and s2 with dummy values)
     PARAMETER_RANGES = {
         "l_s": (5.5, 6.5),    # e.g., length start (mm)
         "l_2": (6.5, 7.5),    # e.g., secondary length (mm)
@@ -133,7 +133,9 @@ if __name__ == "__main__":
         "w_s": (0.5, 0.7),    # e.g., width start (mm)
         "w_2": (0.4, 0.6),    # e.g., secondary width (mm)
         "w_1": (0.1, 0.3),    # e.g., primary width (mm)
-        "freq": (0.8, 4.0)    # Frequency in GHz
+        "freq": (0.8, 4.0),   # Frequency in GHz
+        "s_2": (0.0, 0.1),
+        "s_1": (0.0, 0.1),
     }
 
     # Validate input parameters
