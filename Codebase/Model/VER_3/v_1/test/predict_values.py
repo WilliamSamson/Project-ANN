@@ -20,11 +20,9 @@ def parse_frequency(freq_str):
     """
     if isinstance(freq_str, str):
         freq_str = freq_str.strip()
-        # If the string contains "ghz", extract the numeric part and convert to MHz
         if "ghz" in freq_str.lower():
             numeric_part = re.sub(r'[^0-9\.]', '', freq_str)
             return float(numeric_part) * 1000
-        # If it contains "mhz", extract and convert
         elif "mhz" in freq_str.lower():
             numeric_part = re.sub(r'[^0-9\.]', '', freq_str)
             return float(numeric_part)
@@ -133,12 +131,29 @@ def main():
 
         print("Now, please provide an initial guess for the 9 input parameters")
         print("Example: 6.0,7.0,7.0,0.15,0.15,0.6,0.5,0.2,3.300 GHz")
-        guess_str = input("Initial guess: ")
-        try:
-            initial_guess = parse_forward_input(guess_str)
-        except Exception as e:
-            print(f"Error parsing initial guess: {e}")
-            return
+        guess_str = input("Initial guess (or press Enter to use default guess): ").strip()
+        # Define bounds (same as in inverse_predict)
+        bounds = [
+            (0, 25),  # l_s
+            (0, 25),  # l_2
+            (0, 25),  # l_1
+            (0, 0.35),  # s_2
+            (0, 0.35),  # s_1
+            (0.6, 1.5),  # w_s
+            (0.6, 1.5),  # w_2
+            (0.6, 1.5),  # w_1
+            (800, 4000)  # freq (in MHz)
+        ]
+        if guess_str == "":
+            # Use the midpoint of each bound as the default guess
+            initial_guess = [(lb + ub) / 2 for lb, ub in bounds]
+            print("Using default guess:", initial_guess)
+        else:
+            try:
+                initial_guess = parse_forward_input(guess_str)
+            except Exception as e:
+                print(f"Error parsing initial guess: {e}")
+                return
 
         solution, error_val = inverse_predict(target, initial_guess)
         print("\nOptimized Input Parameters (that should produce the desired output):")
