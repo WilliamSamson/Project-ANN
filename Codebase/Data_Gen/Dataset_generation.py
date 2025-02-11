@@ -134,8 +134,8 @@ if __name__ == "__main__":
         "w_2": (0.4, 0.6),    # e.g., secondary width (mm)
         "w_1": (0.1, 0.3),    # e.g., primary width (mm)
         "freq": (0.8, 4.0),   # Frequency in GHz
-        "s_2": (0.0, 0.1),
-        "s_1": (0.0, 0.1),
+        "s_2": (0.150, 0.35),
+        "s_1": (0.150, 0.35),
     }
 
     # Validate input parameters
