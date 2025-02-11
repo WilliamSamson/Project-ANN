@@ -6,7 +6,7 @@ import tensorflow as tf
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Dense, BatchNormalization, Dropout, Input
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCheckpoint, TensorBoard
+from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCheckpoint
 from tensorflow.keras.regularizers import l1_l2
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import RobustScaler
@@ -17,9 +17,9 @@ from scipy import stats
 import mlflow
 import joblib
 
-# Suppress unnecessary TensorFlow and warning messages
+# Suppress warnings
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-warnings.filterwarnings("ignore", message=".*DejaVu Sans.*")
+warnings.filterwarnings("ignore")
 
 
 # ========================
@@ -27,237 +27,176 @@ warnings.filterwarnings("ignore", message=".*DejaVu Sans.*")
 # ========================
 class Config:
     SEED = 42
-    TEST_SIZE = 0.20  # 20% hold-out test set
-    VAL_SIZE = 0.10  # 10% of training data as validation
-    EPOCHS = 100  # Reduced epochs for quicker training
-    BATCH_SIZE = 32
+    TEST_SIZE = 0.20
+    VAL_SIZE = 0.10
+    EPOCHS = 50  # Reduced for speed
+    BATCH_SIZE = 128  # Larger batch size for faster training
     EARLY_STOPPING_PATIENCE = 10
     REDUCE_LR_PATIENCE = 5
     REGULARIZATION = l1_l2(l1=1e-5, l2=1e-4)
     TARGET_NAMES = ["dB(S(1,1))", "dB(S(2,1))"]
-    EXPLORATION_PLOTS = True
-    CHECKPOINT_PATH = "best_light_model.h5"
-    RUN_SHAP = False  # SHAP analysis can be heavy—disable on low-power machines
+    CHECKPOINT_PATH = "best_model.h5"
 
 
-# For reproducibility
+# Reproducibility
 np.random.seed(Config.SEED)
 tf.random.set_seed(Config.SEED)
 
 
 # =======================
-# Data Loading and Helpers
+# Data Loading
 # =======================
 def parse_frequency(freq_str):
-    """
-    Convert frequency string to a float in MHz.
-    e.g., '800.0 MHz' -> 800.0, '1.000 GHz' -> 1000.0.
-    """
+    """Convert frequency string to MHz."""
     if isinstance(freq_str, str):
         freq_str = freq_str.strip()
         if "MHz" in freq_str:
-            return float(freq_str.replace("MHz", "").strip())
+            return float(freq_str.replace("MHz", ""))
         elif "GHz" in freq_str:
-            return float(freq_str.replace("GHz", "").strip()) * 1000
+            return float(freq_str.replace("GHz", "")) * 1000
     return float(freq_str)
 
 
 def load_data(path):
-    """Load CSV data, convert frequency strings, and remove numeric outliers."""
+    """Load and preprocess data."""
     df = pd.read_csv(path)
     if "freq" in df.columns:
         df["freq"] = df["freq"].apply(parse_frequency)
-
-    # Outlier removal using Z-score (keep only rows where all numeric z-scores < 3)
     numeric_cols = df.select_dtypes(include=np.number).columns
     z = np.abs(stats.zscore(df[numeric_cols]))
-    df = df[(z < 3).all(axis=1)]
-    return df
+    return df[(z < 3).all(axis=1)]
 
 
-# ===========================
-# Light-Weight Model Definition
-# ===========================
-def create_light_model(input_shape):
-    """
-    Create a simplified, lightweight neural network model.
-    This design trades a bit of complexity for much faster training on lower-end PCs.
-    """
-    inputs = Input(shape=(input_shape,))
+# ======================
+# Enhanced Visualization
+# ======================
+def plot_individual_analysis(y_true, y_pred, target_name):
+    """Generate separate plots for each target."""
+    plt.figure(figsize=(12, 5))
 
-    # First hidden layer
-    x = Dense(128, kernel_regularizer=Config.REGULARIZATION)(inputs)
-    x = BatchNormalization()(x)
-    x = tf.keras.layers.ReLU()(x)
-    x = Dropout(0.2)(x)
-
-    # Second hidden layer
-    x = Dense(64, kernel_regularizer=Config.REGULARIZATION)(x)
-    x = BatchNormalization()(x)
-    x = tf.keras.layers.ReLU()(x)
-    x = Dropout(0.2)(x)
-
-    # Output layer for regression on multiple targets
-    outputs = Dense(len(Config.TARGET_NAMES), activation='linear')(x)
-    model = Model(inputs=inputs, outputs=outputs)
-    return model
-
-
-def plot_analysis(y_true, y_pred, target_names):
-    """Generate plots comparing predictions versus actual values and the error distribution."""
-    plt.figure(figsize=(20, 15))
-
-    # Prediction vs Actual for each target
-    for i, name in enumerate(target_names):
-        plt.subplot(2, 2, i + 1)
-        sns.regplot(x=y_true[:, i], y=y_pred[:, i],
-                    scatter_kws={'alpha': 0.4}, line_kws={'color': 'red'})
-        plt.title(f'{name} - Prediction vs Actual')
-        plt.xlabel('Actual')
-        plt.ylabel('Predicted')
-        r2 = r2_score(y_true[:, i], y_pred[:, i])
-        plt.annotate(f'R²: {r2:.3f}', xy=(0.1, 0.85), xycoords='axes fraction')
+    # Prediction vs Actual
+    plt.subplot(1, 2, 1)
+    sns.regplot(x=y_true, y=y_pred, scatter_kws={'alpha': 0.3})
+    plt.title(f'{target_name} - Actual vs Predicted')
+    plt.xlabel('Actual')
+    plt.ylabel('Predicted')
 
     # Error distribution
-    plt.subplot(2, 2, 3)
+    plt.subplot(1, 2, 2)
     errors = y_true - y_pred
-    sns.histplot(errors.flatten(), kde=True)
-    plt.title('Error Distribution')
-    plt.xlabel('Prediction Error')
-
-    # Correlation matrix of true vs predicted values
-    plt.subplot(2, 2, 4)
-    combined = pd.DataFrame(np.hstack([y_true, y_pred]),
-                            columns=[f'True_{n}' for n in target_names] +
-                                    [f'Pred_{n}' for n in target_names])
-    sns.heatmap(combined.corr(), annot=True, cmap='coolwarm', vmin=-1, vmax=1)
-    plt.title('Correlation Matrix')
-
+    sns.histplot(errors, kde=True)
+    plt.title(f'{target_name} Error Distribution')
     plt.tight_layout()
-    plt.savefig('light_analysis.png')
+    plt.savefig(f"{target_name}_analysis.png")
     plt.close()
 
 
+# ====================
+# Advanced Model
+# ====================
+def create_model(input_shape):
+    """Optimized neural network architecture."""
+    inputs = Input(shape=(input_shape,))
+
+    x = Dense(256, activation='relu', kernel_regularizer=Config.REGULARIZATION)(inputs)
+    x = BatchNormalization()(x)
+    x = Dropout(0.3)(x)
+
+    x = Dense(128, activation='relu', kernel_regularizer=Config.REGULARIZATION)(x)
+    x = BatchNormalization()(x)
+    x = Dropout(0.3)(x)
+
+    outputs = Dense(len(Config.TARGET_NAMES))(x)
+    return Model(inputs, outputs)
+
+
 # ===================
-# Main Training Logic
+# Training Pipeline
 # ===================
 def main():
-    # Load data (adjust paths as needed)
+    # Load data with corrected paths
     train_df = load_data('/home/kayode-olalere/PycharmProjects/Project ANN/Training_set/New_Training_set.csv')
     generated_df = load_data(
         '/home/kayode-olalere/PycharmProjects/Project ANN/Codebase/Data_Gen/generated_input_dataset.csv')
 
-    if Config.EXPLORATION_PLOTS:
-        # Pairplot of data distribution
-        plt.figure(figsize=(20, 20))
-        pairplot = sns.pairplot(train_df, diag_kind='kde',
-                                plot_kws={'alpha': 0.6, 's': 80, 'edgecolor': 'k'},
-                                height=2.5)
-        pairplot.fig.suptitle('Data Distribution Pairplot', y=1.02, fontsize=24)
-        plt.tight_layout()
-        plt.savefig('data_distribution_light.png', dpi=300, bbox_inches='tight')
-        plt.close()
+    # Prepare data
+    features = ["l_s", "l_2", "l_1", "s_2", "s_1", "w_s", "w_2", "w_1", "freq"]
+    X = train_df[features].values.astype('float32')
+    y = train_df[Config.TARGET_NAMES].values.astype('float32')
 
-        # Correlation heatmap of features
-        plt.figure(figsize=(16, 12))
-        sns.heatmap(train_df.corr(), annot=True, cmap='coolwarm', vmin=-1, vmax=1,
-                    annot_kws={'size': 12, 'weight': 'bold'}, fmt='.2f', linewidths=0.5,
-                    cbar_kws={'shrink': 0.8})
-        plt.title('Feature Correlation Matrix', fontsize=20, pad=20)
-        plt.tight_layout()
-        plt.savefig('feature_correlation_light.png', dpi=300, bbox_inches='tight')
-        plt.close()
+    # Train/val/test split
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=Config.TEST_SIZE, random_state=Config.SEED)
+    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=Config.VAL_SIZE,
+                                                      random_state=Config.SEED)
 
-    # Select feature and target columns
-    feature_columns = ["l_s", "l_2", "l_1", "s_2", "s_1", "w_s", "w_2", "w_1", "freq"]
-    target_columns = Config.TARGET_NAMES
-
-    X = train_df[feature_columns].values.astype('float32')
-    y = train_df[target_columns].values.astype('float32')
-
-    # Hold-out split: first split off the test set...
-    X_train_full, X_test, y_train_full, y_test = train_test_split(
-        X, y, test_size=Config.TEST_SIZE, random_state=Config.SEED
-    )
-    # ...then carve out a validation set from the training data.
-    X_train, X_val, y_train, y_val = train_test_split(
-        X_train_full, y_train_full, test_size=Config.VAL_SIZE, random_state=Config.SEED
-    )
-
-    # Scaling features with RobustScaler
+    # Feature scaling
     scaler = RobustScaler()
     X_train_scaled = scaler.fit_transform(X_train)
     X_val_scaled = scaler.transform(X_val)
     X_test_scaled = scaler.transform(X_test)
-    joblib.dump(scaler, 'light_scaler.save')
+    joblib.dump(scaler, 'robust_scaler.pkl')
 
-    # Start MLflow run (if you're using MLflow tracking)
+    # MLflow tracking
     mlflow.set_tracking_uri("mlruns")
     mlflow.tensorflow.autolog()
 
     with mlflow.start_run():
-        # Build and compile the lightweight model
-        model = create_light_model(X_train_scaled.shape[1])
-        model.compile(optimizer=Adam(learning_rate=0.001),
-                      loss='huber',
-                      metrics=[tf.keras.metrics.RootMeanSquaredError()])
+        # Build and compile model
+        model = create_model(X_train_scaled.shape[1])
+        model.compile(optimizer=Adam(0.001), loss='mse', metrics=['mae'])
 
-        # Define callbacks to prevent over-training and manage learning rate
+        # Callbacks
         callbacks = [
             EarlyStopping(patience=Config.EARLY_STOPPING_PATIENCE, restore_best_weights=True),
-            ReduceLROnPlateau(patience=Config.REDUCE_LR_PATIENCE, factor=0.5, min_lr=1e-6),
-            ModelCheckpoint(Config.CHECKPOINT_PATH, save_best_only=True, monitor='val_loss', mode='min'),
-            TensorBoard(log_dir='./logs_light')
+            ReduceLROnPlateau(patience=Config.REDUCE_LR_PATIENCE, factor=0.5),
+            ModelCheckpoint(Config.CHECKPOINT_PATH, save_best_only=True)
         ]
 
-        # Train the model using a simple tf.data pipeline
-        train_ds = tf.data.Dataset.from_tensor_slices((X_train_scaled, y_train))
-        train_ds = train_ds.batch(Config.BATCH_SIZE).prefetch(tf.data.AUTOTUNE)
-        val_ds = tf.data.Dataset.from_tensor_slices((X_val_scaled, y_val))
-        val_ds = val_ds.batch(Config.BATCH_SIZE).prefetch(tf.data.AUTOTUNE)
+        # Train with optimized batches
+        history = model.fit(
+            X_train_scaled, y_train,
+            validation_data=(X_val_scaled, y_val),
+            epochs=Config.EPOCHS,
+            batch_size=Config.BATCH_SIZE,
+            callbacks=callbacks,
+            verbose=1
+        )
 
-        history = model.fit(train_ds,
-                            validation_data=val_ds,
-                            epochs=Config.EPOCHS,
-                            callbacks=callbacks,
-                            verbose=2)
-
-        # Load the best weights from training
-        model.load_weights(Config.CHECKPOINT_PATH)
-
-        # Evaluate on the test set
+        # Generate predictions
         test_pred = model.predict(X_test_scaled)
-        test_mse = mean_squared_error(y_test, test_pred)
-        test_mae = mean_absolute_error(y_test, test_pred)
-        test_r2 = r2_score(y_test, test_pred)
-        print(f"\nFinal Test Metrics:")
-        print(f"MSE: {test_mse:.4f}")
-        print(f"MAE: {test_mae:.4f}")
-        print(f"R²: {test_r2:.4f}  (Accuracy Percentage: {test_r2 * 100:.2f}%)")
 
-        # Generate analysis plots
-        plot_analysis(y_test, test_pred, Config.TARGET_NAMES)
+        # Calculate metrics
+        r2_scores = [r2_score(y_test[:, i], test_pred[:, i]) for i in range(len(Config.TARGET_NAMES))]
+        overall_r2 = np.mean(r2_scores)
 
-        # Optional: SHAP Analysis (can be time-consuming on low-power PCs)
-        if Config.RUN_SHAP:
-            import shap
-            # Use a small sample for SHAP to save time
-            explainer = shap.DeepExplainer(model, X_train_scaled[:100])
-            shap_values = explainer.shap_values(X_test_scaled[:50])
-            plt.figure()
-            shap.summary_plot(shap_values, X_test_scaled[:50], feature_names=feature_columns, show=False)
-            plt.savefig('light_feature_importance.png')
-            plt.close()
+        # Layman-friendly output
+        print("\n=== Final Results ===")
+        print(f"Model Accuracy: {overall_r2 * 100:.1f}%")
+        print(f"Average Error: {np.mean(mean_absolute_error(y_test, test_pred, multioutput='raw_values')):.4f} dB")
 
-        # Generate predictions for new (generated) data
-        X_gen = generated_df[feature_columns].values.astype('float32')
-        X_gen_scaled = scaler.transform(X_gen)
-        gen_pred = model.predict(X_gen_scaled)
-        generated_df[target_columns] = gen_pred
-        generated_df.to_csv('light_generated_predictions.csv', index=False)
+        # Individual target analysis
+        for i, target in enumerate(Config.TARGET_NAMES):
+            plot_individual_analysis(y_test[:, i], test_pred[:, i], target)
 
-        # Log artifacts if needed
-        mlflow.log_artifacts(".")
+            # Target-specific metrics
+            print(f"\n{target} Performance:")
+            print(f"- R²: {r2_scores[i]:.3f} (Accuracy: {r2_scores[i] * 100:.1f}%)")
+            print(f"- MAE: {mean_absolute_error(y_test[:, i], test_pred[:, i]):.4f} dB")
+
+        # Generate frequency analysis
+        plt.figure(figsize=(10, 6))
+        sns.lineplot(x=train_df['freq'], y=train_df[Config.TARGET_NAMES[0]], errorbar=None)
+        plt.title("Frequency vs S-Parameter Performance")
+        plt.xlabel("Frequency (MHz)")
+        plt.ylabel("dB Magnitude")
+        plt.savefig("frequency_analysis.png")
+        plt.close()
+
+        # Save predictions
+        gen_inputs = generated_df[features].values.astype('float32')
+        gen_pred = model.predict(scaler.transform(gen_inputs))
+        generated_df[Config.TARGET_NAMES] = gen_pred
+        generated_df.to_csv("predictions.csv", index=False)
 
 
 if __name__ == "__main__":
