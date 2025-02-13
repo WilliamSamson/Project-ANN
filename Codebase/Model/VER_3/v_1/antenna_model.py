@@ -238,6 +238,8 @@ def main():
         r2_scores = [r2_score(y_test[:, i], test_pred[:, i]) for i in range(2)]
         mae_scores = [mean_absolute_error(y_test[:, i], test_pred[:, i]) for i in range(2)]
 
+        plot_correlation_heatmap(train_df)
+
         # Layman-friendly output
         print("\n=== Final Performance ===")
         print(f"Overall Accuracy: {np.mean(r2_scores) * 100:.1f}%")
@@ -261,7 +263,7 @@ def main():
         plt.close()
 
         # Call the function
-        plot_correlation_heatmap(train_df)
+
 
         # Generate predictions
         gen_inputs = generated_df[Config.FEATURE_COLS].values.astype('float32')

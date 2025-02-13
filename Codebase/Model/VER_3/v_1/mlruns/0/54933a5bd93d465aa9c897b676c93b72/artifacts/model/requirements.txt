@@ -1,0 +1,8 @@
+mlflow==2.20.0
+cloudpickle==3.1.1
+keras-tuner==1.4.7
+numpy==2.0.2
+pandas==2.2.3
+scikit-learn==1.6.1
+scipy==1.15.1
+tensorflow==2.18.0
