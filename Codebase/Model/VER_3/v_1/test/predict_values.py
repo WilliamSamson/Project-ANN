@@ -134,14 +134,14 @@ def main():
         guess_str = input("Initial guess (or press Enter to use default guess): ").strip()
         # Define bounds (same as in inverse_predict)
         bounds = [
-            (0, 25),  # l_s
-            (0, 25),  # l_2
-            (0, 25),  # l_1
-            (0, 0.35),  # s_2
-            (0, 0.35),  # s_1
-            (0.6, 1.5),  # w_s
-            (0.6, 1.5),  # w_2
-            (0.6, 1.5),  # w_1
+            (7, 13),  # l_s
+            (6, 25),  # l_2
+            (6, 25),  # l_1
+            (0.20, 0.6),  # s_2
+            (0.20, 0.6),  # s_1
+            (0.6, 1.8),  # w_s
+            (0.5, 2),  # w_2
+            (0.6, 2),  # w_1
             (800, 4000)  # freq (in MHz)
         ]
         if guess_str == "":
