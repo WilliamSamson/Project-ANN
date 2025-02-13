@@ -162,6 +162,23 @@ def create_model(input_shape):
     outputs = Dense(len(Config.TARGET_COLS))(x)
     return Model(inputs, outputs)
 
+# ========================
+# Correlation Heatmap Plot
+# ========================
+def plot_correlation_heatmap(df, save_path="correlation_heatmap.png"):
+    """Plots a heatmap showing the correlation between features and target variables."""
+    plt.figure(figsize=(12, 8))
+    corr_matrix = df.corr()
+
+    # Create heatmap
+    sns.heatmap(
+        corr_matrix, annot=True, fmt=".2f", cmap="coolwarm", linewidths=0.5
+    )
+
+    plt.title("Feature Correlation Heatmap")
+    plt.savefig(save_path)
+    plt.close()
+    print(f"Correlation heatmap saved as {save_path}")
 
 # ===================
 # Training Pipeline
@@ -243,11 +260,43 @@ def main():
         plt.savefig("frequency_response.png")
         plt.close()
 
+        # Call the function
+        plot_correlation_heatmap(train_df)
+
         # Generate predictions
         gen_inputs = generated_df[Config.FEATURE_COLS].values.astype('float32')
         gen_pred = model.predict(scaler.transform(gen_inputs))
         generated_df[Config.TARGET_COLS] = gen_pred
         generated_df.to_csv("antenna_predictions.csv", index=False)
+
+        # === After model.fit() and evaluation ===
+
+        # Extract model architecture details dynamically
+    hidden_layers = [layer for layer in model.layers if isinstance(layer, Dense)][:-1]  # Exclude output layer
+    num_hidden_layers = len(hidden_layers)
+    neurons_per_layer = [layer.units for layer in hidden_layers]
+    activations = [layer.activation.__name__ for layer in hidden_layers]
+
+    # Print hyperparameters and training info
+    print("\n=== Model Hyperparameters and Training Info ===")
+    print(f"Activation function (hidden layers): {activations}")
+    print(f"Number of hidden layers: {num_hidden_layers}")
+    print(f"Neurons in each hidden layer: {neurons_per_layer}")
+
+    # Get initial learning rate
+    initial_lr = model.optimizer.learning_rate.numpy()
+    print(f"Initial learning rate: {initial_lr:.6f}")
+
+    # Obtain the current (final) learning rate from the optimizer (useful if ReduceLROnPlateau modified it)
+    final_lr = tf.keras.backend.get_value(model.optimizer.lr)
+    print(f"Best (final) learning rate: {final_lr:.6f}")
+
+    # The number of epochs run is the length of the training history.
+    epochs_run = len(history.history['loss'])
+    print(f"Number of epochs run: {epochs_run}")
+
+    # Print the optimizer (adaptive learning function)
+    print(f"Adaptive learning function (optimizer): {type(model.optimizer).__name__}")
 
 
 if __name__ == "__main__":
