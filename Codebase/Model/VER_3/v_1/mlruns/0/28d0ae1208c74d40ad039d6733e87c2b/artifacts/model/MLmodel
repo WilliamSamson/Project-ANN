@@ -16,7 +16,7 @@ flavors:
 is_signature_from_type_hint: false
 mlflow_version: 2.20.0
 model_size_bytes: 485580
-model_uuid: 623d4c891ebc4d8a90eeb08550e1f622
+model_uuid: 0bed40fdefc3438fa57562a289b0532a
 run_id: 28d0ae1208c74d40ad039d6733e87c2b
 signature:
   inputs: '[{"type": "tensor", "tensor-spec": {"dtype": "float32", "shape": [-1, 9]}}]'
@@ -24,4 +24,4 @@ signature:
     2]}}]'
   params: null
 type_hint_from_example: false
-utc_time_created: '2025-02-14 01:26:09.849629'
+utc_time_created: '2025-02-14 01:41:02.107397'

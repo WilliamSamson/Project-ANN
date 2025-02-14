@@ -1,5 +1,5 @@
 artifact_uri: /home/kayode-olalere/PycharmProjects/Project ANN/Codebase/Model/VER_3/v_1/mlruns/0/28d0ae1208c74d40ad039d6733e87c2b/artifacts
-end_time: null
+end_time: 1739497292920
 entry_point_name: ''
 experiment_id: '0'
 lifecycle_stage: active
@@ -10,6 +10,6 @@ source_name: ''
 source_type: 4
 source_version: ''
 start_time: 1739490831336
-status: 1
+status: 3
 tags: []
 user_id: kayode-olalere
