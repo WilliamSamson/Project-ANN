@@ -40,7 +40,6 @@ def parse_forward_input(input_str):
 
 def forward_predict(input_params):
     """Scale input and predict output using the model."""
-    # Ensure input has exactly 9 features
     if len(input_params) != 9:
         raise ValueError(f"Expected 9 features, got {len(input_params)}")
     input_arr = np.array(input_params, dtype='float32').reshape(1, -1)
@@ -50,10 +49,9 @@ def forward_predict(input_params):
 
 
 def calculate_accuracy(actual, predicted):
-    """Compute accuracy using a normalized error approach (for inverse mode only)."""
+    """Compute accuracy using a normalized error approach."""
     actual = np.array(actual, dtype=np.float32)
     predicted = np.array(predicted, dtype=np.float32)
-    # Relative error calculation; note that if error > 100%, accuracy becomes negative.
     denominator = np.maximum(np.maximum(np.abs(actual), np.abs(predicted)), 1e-6)
     error = np.abs((actual - predicted) / denominator)
     mean_error = np.mean(error)
@@ -86,13 +84,11 @@ def inverse_predict(target, initial_guess):
 
 def dual_frequency_optimization(initial_params, freq1, freq2):
     """Optimize design parameters (8 numbers) for dual-frequency performance."""
-    # Target: dB(S(1,1)) = -10, dB(S(2,1)) = -1 at both frequencies.
     target_s1 = -10
     target_s2 = -1
     target = np.array([target_s1, target_s2, target_s1, target_s2], dtype=np.float32)
 
     def objective(x):
-        # Build full input arrays (8 parameters + frequency)
         input_f1 = np.append(x, freq1).astype('float32').reshape(1, -1)
         input_f2 = np.append(x, freq2).astype('float32').reshape(1, -1)
         pred_f1 = model(scaler.transform(input_f1), training=False).numpy().flatten()
@@ -110,10 +106,10 @@ def dual_frequency_optimization(initial_params, freq1, freq2):
 
 
 def plot_performance(initial_params, optimized_params, freq1, freq2):
-    """Generate plots for frequency response (S-parameters) vs frequency."""
+    """Generate plots for frequency response vs frequency."""
     fig, axs = plt.subplots(2, 2, figsize=(15, 12))
 
-    # 1. Parameter Comparison (bar chart)
+    # Parameter Comparison
     param_names = ['l_s', 'l_2', 'l_1', 's_2', 's_1', 'w_s', 'w_2', 'w_1']
     axs[0, 0].bar(np.arange(len(param_names)) - 0.15, initial_params, width=0.3, label='Initial')
     axs[0, 0].bar(np.arange(len(param_names)) + 0.15, optimized_params, width=0.3, label='Optimized')
@@ -122,7 +118,7 @@ def plot_performance(initial_params, optimized_params, freq1, freq2):
     axs[0, 0].set_xticklabels(param_names, rotation=45)
     axs[0, 0].legend()
 
-    # 2. Frequency Response Sweep (Predicted S-parameters vs frequency)
+    # Frequency Response Sweep
     freqs = np.linspace(800, 4000, 50)
     predictions = [forward_predict(np.append(np.array(optimized_params), f)) for f in freqs]
     s11 = [p[0] for p in predictions]
@@ -136,11 +132,9 @@ def plot_performance(initial_params, optimized_params, freq1, freq2):
     axs[0, 1].set_ylabel('dB')
     axs[0, 1].legend()
 
-    # 3. Target Achievement: Compare predicted S-parameters for initial and optimized sets at each target frequency
+    # S-parameter Comparison at Freq1
     initial_pred_f1 = forward_predict(np.append(np.array(initial_params), freq1))
-    initial_pred_f2 = forward_predict(np.append(np.array(initial_params), freq2))
     opt_pred_f1 = forward_predict(list(optimized_params) + [freq1])
-    opt_pred_f2 = forward_predict(list(optimized_params) + [freq2])
     axs[1, 0].bar(['Freq1 S11', 'Freq1 S21'], [initial_pred_f1[0], initial_pred_f1[1]],
                   width=0.4, label='Initial', alpha=0.6)
     axs[1, 0].bar(['Freq1 S11', 'Freq1 S21'], [opt_pred_f1[0], opt_pred_f1[1]],
@@ -150,6 +144,9 @@ def plot_performance(initial_params, optimized_params, freq1, freq2):
     axs[1, 0].set_title('Freq1 S-parameter Comparison')
     axs[1, 0].legend()
 
+    # S-parameter Comparison at Freq2
+    initial_pred_f2 = forward_predict(np.append(np.array(initial_params), freq2))
+    opt_pred_f2 = forward_predict(list(optimized_params) + [freq2])
     axs[1, 1].bar(['Freq2 S11', 'Freq2 S21'], [initial_pred_f2[0], initial_pred_f2[1]],
                   width=0.4, label='Initial', alpha=0.6)
     axs[1, 1].bar(['Freq2 S11', 'Freq2 S21'], [opt_pred_f2[0], opt_pred_f2[1]],
@@ -165,10 +162,9 @@ def plot_performance(initial_params, optimized_params, freq1, freq2):
 
 
 def plot_design_parameters(initial_params, optimized_params):
-    """Plot design parameters vs. frequency (they are constant, so we show horizontal lines)"""
+    """Plot design parameters vs. frequency (constant values shown as horizontal lines)."""
     freqs = np.linspace(800, 4000, 50)
-
-    # Plot Lengths (first three parameters)
+    # Plot Lengths (l_s, l_2, l_1)
     plt.figure(figsize=(10, 6))
     for i, name in enumerate(['l_s', 'l_2', 'l_1']):
         plt.plot(freqs, [initial_params[i]] * len(freqs), '--', label=f'Initial {name}')
@@ -180,7 +176,7 @@ def plot_design_parameters(initial_params, optimized_params):
     plt.savefig('frequency_vs_length.png')
     plt.close()
 
-    # Plot Spacings (parameters 4 and 5: s_2, s_1)
+    # Plot Spacings (s_2, s_1)
     plt.figure(figsize=(10, 6))
     for i, name in zip([3, 4], ['s_2', 's_1']):
         plt.plot(freqs, [initial_params[i]] * len(freqs), '--', label=f'Initial {name}')
@@ -192,7 +188,7 @@ def plot_design_parameters(initial_params, optimized_params):
     plt.savefig('frequency_vs_spacing.png')
     plt.close()
 
-    # Plot Widths (parameters 6,7,8: w_s, w_2, w_1)
+    # Plot Widths (w_s, w_2, w_1)
     plt.figure(figsize=(10, 6))
     for i, name in zip([5, 6, 7], ['w_s', 'w_2', 'w_1']):
         plt.plot(freqs, [initial_params[i]] * len(freqs), '--', label=f'Initial {name}')
@@ -203,6 +199,13 @@ def plot_design_parameters(initial_params, optimized_params):
     plt.legend()
     plt.savefig('frequency_vs_width.png')
     plt.close()
+
+
+def format_design_parameters(params):
+    """Convert a parameter array into a friendly formatted string."""
+    names = ['l_s', 'l_2', 'l_1', 's_2', 's_1', 'w_s', 'w_2', 'w_1']
+    formatted = ", ".join([f"{name}: {float(val):.3f}" for name, val in zip(names, params)])
+    return formatted
 
 
 def main():
@@ -233,47 +236,61 @@ def main():
             print("\n--- Initial Predictions ---")
             print(f"At Frequency {freq1} MHz: dB(S11) = {init_pred_f1[0]:.2f}, dB(S21) = {init_pred_f1[1]:.2f}")
             print(f"At Frequency {freq2} MHz: dB(S11) = {init_pred_f2[0]:.2f}, dB(S21) = {init_pred_f2[1]:.2f}")
-            print(f"Initial Design Parameters: {base_params}")
+            print("Initial Design Parameters:")
+            print(format_design_parameters(base_params))
 
-            # Check if initial predictions are within thresholds
-            thresholds = {'s11': 1.0, 's21': 0.2}  # Allowable deviation
-            within_range = (
-                    (abs(init_pred_f1[0] + 10) < thresholds['s11']) and
-                    (abs(init_pred_f1[1] + 1) < thresholds['s21']) and
-                    (abs(init_pred_f2[0] + 10) < thresholds['s11']) and
-                    (abs(init_pred_f2[1] + 1) < thresholds['s21'])
-            )
-            if within_range:
-                print("Initial parameters already meet targets!")
-                optimized_params = base_params
-                final_error = 0.0
-            else:
-                print("Optimizing parameters to meet targets...")
-                optimized_params, final_error = dual_frequency_optimization(base_params, freq1, freq2)
+            # First optimization iteration
+            print("\nOptimizing parameters to meet targets...")
+            optimized_params, final_error = dual_frequency_optimization(base_params, freq1, freq2)
 
-            # Compute final predictions
-            final_pred_f1 = forward_predict(list(optimized_params) + [freq1])
-            final_pred_f2 = forward_predict(list(optimized_params) + [freq2])
+            # Iterative refinement
+            max_iter = 5
+            tol_s11 = 0.5  # tolerance in dB for S11 (target -10 dB)
+            tol_s21 = 0.3  # tolerance in dB for S21 (target -1 dB)
+            iteration = 0
+            current_params = optimized_params
+            while iteration < max_iter:
+                final_pred_f1 = forward_predict(list(current_params) + [freq1])
+                final_pred_f2 = forward_predict(list(current_params) + [freq2])
 
-            print("\n--- Final Predictions ---")
+                error_s11_f1 = abs(final_pred_f1[0] + 10)
+                error_s21_f1 = abs(final_pred_f1[1] + 1)
+                error_s11_f2 = abs(final_pred_f2[0] + 10)
+                error_s21_f2 = abs(final_pred_f2[1] + 1)
+
+                if (error_s11_f1 < tol_s11 and error_s21_f1 < tol_s21 and
+                        error_s11_f2 < tol_s11 and error_s21_f2 < tol_s21):
+                    break
+
+                current_params, current_error = dual_frequency_optimization(current_params, freq1, freq2)
+                iteration += 1
+                print(f"Refinement iteration {iteration} complete. Current error: {current_error:.4f}")
+
+            refined_params = current_params
+            final_pred_f1 = forward_predict(list(refined_params) + [freq1])
+            final_pred_f2 = forward_predict(list(refined_params) + [freq2])
+
+            print("\n--- Final Predictions After Refinement ---")
             print(f"At Frequency {freq1} MHz: dB(S11) = {final_pred_f1[0]:.2f}, dB(S21) = {final_pred_f1[1]:.2f}")
             print(f"At Frequency {freq2} MHz: dB(S11) = {final_pred_f2[0]:.2f}, dB(S21) = {final_pred_f2[1]:.2f}")
-            print(f"Optimized Design Parameters: {list(optimized_params)}")
+            print("Optimized Design Parameters:")
+            print(format_design_parameters(refined_params))
 
-            # Calculate accuracy (note: if relative error > 100%, accuracy becomes negative)
             def calc_accuracy(preds, targets):
                 errors = np.abs((preds - targets) / np.maximum(np.abs(targets), 1e-6))
                 return 100 * (1 - np.mean(errors))
 
             accuracy = calc_accuracy(np.concatenate([final_pred_f1, final_pred_f2]), [-10, -1, -10, -1])
 
-            # Generate performance plots and additional design parameter plots
-            plot_performance(base_params, optimized_params, freq1, freq2)
-            plot_design_parameters(base_params, list(optimized_params))
+            plot_performance(base_params, refined_params, freq1, freq2)
+            plot_design_parameters(base_params, list(refined_params))
 
             print("\nOptimization Complete!")
             print(f"Final Accuracy: {accuracy:.2f}%")
             print(f"Error Value: {final_error:.4f}")
+            if (abs(final_pred_f1[0] + 10) > tol_s11 or abs(final_pred_f1[1] + 1) > tol_s21 or
+                    abs(final_pred_f2[0] + 10) > tol_s11 or abs(final_pred_f2[1] + 1) > tol_s21):
+                print("Note: The desired dB targets were not fully achieved. The model may be limited in sensitivity.")
             print("Visual analysis saved to 'dual_frequency_analysis.png', 'frequency_vs_length.png',")
             print(" 'frequency_vs_spacing.png', and 'frequency_vs_width.png'")
 
@@ -305,7 +322,7 @@ def main():
         print("Enter an initial guess for 9 input parameters or press Enter for default.")
         guess_str = input("Initial guess: ").strip()
         bounds = [
-            (7, 13), (6, 25), (6, 25),
+            (6, 13), (6, 25), (6, 25),
             (0.20, 0.6), (0.20, 0.6),
             (0.6, 1.8), (0.5, 2), (0.6, 2),
             (800, 4000)
