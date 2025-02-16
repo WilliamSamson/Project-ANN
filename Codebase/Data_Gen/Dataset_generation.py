@@ -127,9 +127,9 @@ if __name__ == "__main__":
 
     # Updated parameter ranges and headers (including s1 and s2 with dummy values)
     PARAMETER_RANGES = {
-        "l_s": (5.5, 6.5),    # e.g., length start (mm)
-        "l_2": (6.5, 7.5),    # e.g., secondary length (mm)
-        "l_1": (6.5, 7.5),    # e.g., primary length (mm)
+        "l_s": (6, 13),    # e.g., length start (mm)
+        "l_2": (7, 25),    # e.g., secondary length (mm)
+        "l_1": (7, 25),    # e.g., primary length (mm)
         "w_s": (0.5, 0.7),    # e.g., width start (mm)
         "w_2": (0.4, 0.6),    # e.g., secondary width (mm)
         "w_1": (0.1, 0.3),    # e.g., primary width (mm)

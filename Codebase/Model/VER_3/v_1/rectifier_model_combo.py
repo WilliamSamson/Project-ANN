@@ -23,7 +23,6 @@ from scipy import stats
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 warnings.filterwarnings("ignore")
 
-
 # ========================
 # Configuration Parameters
 # ========================
@@ -136,12 +135,17 @@ def build_model(hp):
 
     activation_1 = hp.Choice('activation_1', values=['relu', 'tanh'])
     activation_2 = hp.Choice('activation_2', values=['relu', 'tanh'])
+    activation_3 = hp.Choice('activation_2', values=['relu', 'tanh'])
 
     x = Dense(256, activation=activation_1, kernel_regularizer=Config.REGULARIZATION)(inputs)
     x = BatchNormalization()(x)
     x = Dropout(0.3)(x)
 
     x = Dense(128, activation=activation_2, kernel_regularizer=Config.REGULARIZATION)(x)
+    x = BatchNormalization()(x)
+    x = Dropout(0.3)(x)
+
+    x = Dense(64, activation=activation_3, kernel_regularizer=Config.REGULARIZATION)(x)
     x = BatchNormalization()(x)
     x = Dropout(0.3)(x)
 
@@ -208,6 +212,35 @@ def main():
             plot_individual_performance(y_test[:, i], test_pred[:, i], target)
 
         best_model.save(Config.CHECKPOINT_PATH)
+
+        # === After model.fit() and evaluation ===
+
+        # Extract model architecture details dynamically
+        hidden_layers = [layer for layer in best_model.layers if isinstance(layer, Dense)][:-1]  # Exclude output layer
+        num_hidden_layers = len(hidden_layers)
+        neurons_per_layer = [layer.units for layer in hidden_layers]
+        activations = [layer.activation.__name__ for layer in hidden_layers]
+
+        # Print hyperparameters and training info
+        print("\n=== Model Hyperparameters and Training Info ===")
+        print(f"Activation function (hidden layers): {activations}")
+        print(f"Number of hidden layers: {num_hidden_layers}")
+        print(f"Neurons in each hidden layer: {neurons_per_layer}")
+
+        # Get initial learning rate
+        initial_lr = best_hps.get('learning_rate')
+        print(f"Initial learning rate: {initial_lr:.6f}")
+
+        # Obtain the current (final) learning rate from the optimizer (useful if ReduceLROnPlateau modified it)
+        final_lr = tf.keras.backend.get_value(best_model.optimizer.lr)
+        print(f"Best (final) learning rate: {final_lr:.6f}")
+
+        # Number of epochs (since history is missing, estimate based on early stopping if used)
+        epochs_run = Config.EPOCHS  # Assuming full run; adjust if early stopping applies
+        print(f"Number of epochs run: {epochs_run}")
+
+        # Print the optimizer (adaptive learning function)
+        print(f"Adaptive learning function (optimizer): {type(best_model.optimizer).__name__}")
 
 
 if __name__ == "__main__":

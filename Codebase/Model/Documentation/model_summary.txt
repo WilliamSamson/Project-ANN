@@ -1,0 +1,146 @@
+# Documentation: **Model Management and Utilities Script**
+
+## **Overview**
+This script provides utility functions for working with a pre-trained TensorFlow/Keras model. It includes:
+- Checking GPU/CPU availability.
+- Loading and verifying the model file.
+- Saving the model's summary and architecture visualization.
+- Optional functionality to evaluate the model and generate predictions.
+- Saving system and device (CPU/GPU) information.
+
+---
+
+## **Script Breakdown**
+
+### 1. **Check for GPU/CPU Availability**
+```python
+def check_device():
+    physical_devices = tf.config.list_physical_devices('GPU')
+    device_info = {"device_count": len(physical_devices), "devices": []}
+    if physical_devices:
+        for device in physical_devices:
+            device_info["devices"].append(device.name)
+    else:
+        device_info["devices"].append("No GPU available, using CPU.")
+    return device_info
+```
+- **Purpose**: Check if a GPU is available and list its details. If no GPU is found, it defaults to the CPU.
+- **Output**: Saves device information (GPU/CPU) in JSON format.
+
+---
+
+### 2. **Define File Paths and Directories**
+```python
+model_path = os.path.expanduser("~/PycharmProjects/Project ANN/Codebase/Model/VER_2/best_model_advanced.h5")
+output_dir = os.path.expanduser("~/PycharmProjects/Project ANN/Codebase/Model/VER_2/")
+os.makedirs(output_dir, exist_ok=True)
+```
+- **Purpose**: Define and ensure the existence of the output directory for saving results and logs.
+
+---
+
+### 3. **Load and Verify the Model File**
+```python
+if not os.path.exists(model_path):
+    raise FileNotFoundError(f"Model file not found at {model_path}")
+
+model = load_model(model_path)
+print("Model loaded successfully.")
+```
+- **Purpose**: Load the pre-trained model and validate the model file's existence.
+
+---
+
+### 4. **Export the Model Summary**
+```python
+model_summary_path = os.path.join(output_dir, "model_summary.txt")
+with open(model_summary_path, "w") as f:
+    model.summary(print_fn=lambda x: f.write(x + "\n"))
+print(f"Model summary saved to {model_summary_path}")
+```
+- **Purpose**: Save the model's architecture summary (layers, parameters, etc.) to a text file.
+
+---
+
+### 5. **Visualize and Save the Model Architecture**
+```python
+plot_path = os.path.join(output_dir, "model_architecture.png")
+plot_model(model, to_file=plot_path, show_shapes=True, show_layer_names=True)
+print(f"Model architecture saved as {plot_path}")
+```
+- **Purpose**: Generate and save a diagram of the model's architecture, including layer shapes and names.
+
+---
+
+### 6. **Optional: Evaluate the Model on a Test Set**
+```python
+def evaluate_model(model, test_data, test_labels, output_file):
+    results = model.evaluate(test_data, test_labels, verbose=1)
+    metrics = {metric: value for metric, value in zip(model.metrics_names, results)}
+    with open(output_file, "w") as f:
+        json.dump(metrics, f, indent=4)
+    print(f"Model evaluation results saved to {output_file}")
+    return metrics
+```
+- **Purpose**: Evaluate the model on test data and save performance metrics (e.g., accuracy, loss) to a JSON file.
+- **Parameters**:
+  - `test_data`: Test input features.
+  - `test_labels`: Corresponding true labels.
+  - `output_file`: File path to save evaluation metrics.
+
+---
+
+### 7. **Optional: Generate Predictions**
+```python
+def make_predictions(model, data, output_file, label_encoder=None):
+    predictions = model.predict(data)
+    if label_encoder:
+        predictions = label_encoder.inverse_transform(predictions.argmax(axis=1))
+    else:
+        predictions = predictions.tolist()
+    with open(output_file, "w") as f:
+        json.dump(predictions, f, indent=4)
+    print(f"Predictions saved to {output_file}")
+    return predictions
+```
+- **Purpose**: Generate predictions from the model and save the results to a JSON file.
+- **Parameters**:
+  - `data`: Input data for prediction.
+  - `output_file`: File path to save predictions.
+  - `label_encoder` (optional): Decodes predicted labels if a `LabelEncoder` is used.
+
+---
+
+### 8. **Save Device (GPU/CPU) Information**
+```python
+device_info = check_device()
+device_info_path = os.path.join(output_dir, "device_info.json")
+with open(device_info_path, "w") as f:
+    json.dump(device_info, f, indent=4)
+print(f"Device info saved to {device_info_path}")
+```
+- **Purpose**: Save information about the device (e.g., GPU or CPU) used for model inference.
+
+---
+
+## **Dependencies**
+- **Python Libraries**:
+  - `os`, `json`, `tensorflow`, `numpy`.
+  - `tensorflow.keras.models.load_model`: Load the pre-trained model.
+  - `tensorflow.keras.utils.plot_model`: Visualize the model architecture.
+
+---
+
+## **Use Cases**
+1. **Model Management**:
+   - Validate the availability of GPU/CPU.
+   - Load and verify the model file.
+   - Save and document the model structure.
+
+2. **Evaluation and Prediction**:
+   - Evaluate model performance on test data.
+   - Generate and save predictions on new data.
+
+3. **System Information**:
+   - Log hardware device information for reproducibility and debugging.
+
