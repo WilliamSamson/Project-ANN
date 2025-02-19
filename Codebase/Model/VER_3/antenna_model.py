@@ -189,7 +189,7 @@ def plot_correlation_heatmap(df ):
 # ===================
 def main():
     # Find the project root dynamically
-    project_root = Path(__file__).resolve().parents[3]  # Go up 4 levels from script directory
+    project_root = Path(__file__).resolve().parents[3]  # Go up 3 levels from script directory
 
     # Construct the correct data path
     data_path = project_root / "Training_set" / "New_Training_set.csv"
