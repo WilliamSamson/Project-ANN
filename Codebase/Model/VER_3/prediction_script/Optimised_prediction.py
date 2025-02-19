@@ -7,7 +7,10 @@ import joblib
 import re
 import matplotlib.pyplot as plt
 from pathlib import Path
+import questionary
 
+# Global variable to determine inclusion of dB S21 values
+INCLUDE_S21 = True
 
 IMAGE_SAVE_DIR = "Graphs"
 os.makedirs(IMAGE_SAVE_DIR, exist_ok=True)  # Create directory if it doesn't exist
@@ -21,9 +24,9 @@ if not data_path.exists():
     raise FileNotFoundError(f"File not found: {data_path}")
 
 if not data_path2.exists():
-    raise FileNotFoundError(f"File not found: {data_path}")
+    raise FileNotFoundError(f"File not found: {data_path2}")
 
-model = load_model(str(data_path),compile=False)
+model = load_model(str(data_path), compile=False)
 scaler = joblib.load(str(data_path2))
 
 
@@ -51,10 +54,8 @@ def calculate_accuracy(actual, predicted):
     return accuracy_percentage
 
 
-
 def inverse_predict(target, initial_guess):
     """Optimize input parameters to match desired target output."""
-
     def objective(x):
         pred = forward_predict(x)
         return np.sum((pred - target) ** 2)
@@ -73,7 +74,6 @@ def inverse_predict(target, initial_guess):
     predicted_output = forward_predict(optimized_result)
     accuracy_percentage = calculate_accuracy(target, predicted_output)
     return optimized_result, res.fun, accuracy_percentage
-
 
 
 def parse_frequency(freq_str):
@@ -96,22 +96,28 @@ def forward_predict(input_params):
     input_arr = np.array(input_params, dtype='float32').reshape(1, -1)
     input_arr_scaled = scaler.transform(input_arr)
     pred = model(input_arr_scaled, training=False)
-    return pred.numpy().flatten()
+    prediction = pred.numpy().flatten()
+    if not INCLUDE_S21:
+        return prediction[:1]  # Only return S11
+    return prediction
 
 
 def dual_objective(x, freq1, freq2):
-    """
-    Objective function for dual-frequency optimization.
-    We target S11 = -10 dB and S21 = -1 dB at both frequencies.
-    """
-    target = np.array([-10, -1, -10, -1], dtype=np.float32)
+    if INCLUDE_S21:
+        target = np.array([-15, -1, -15, -1], dtype=np.float32)
+    else:
+        target = np.array([-15, -15], dtype=np.float32)
+
+    # Explicit reshaping (optional)
     input_f1 = np.append(x, freq1).astype('float32').reshape(1, -1)
     input_f2 = np.append(x, freq2).astype('float32').reshape(1, -1)
-    pred_f1 = model(scaler.transform(input_f1), training=False).numpy().flatten()
-    pred_f2 = model(scaler.transform(input_f2), training=False).numpy().flatten()
+
+    # Flatten before calling forward_predict since it expects a 9-element vector
+    pred_f1 = forward_predict(input_f1.flatten())
+    pred_f2 = forward_predict(input_f2.flatten())
+
     combined_pred = np.concatenate([pred_f1, pred_f2])
     return np.sum((combined_pred - target) ** 2)
-
 
 def global_dual_frequency_optimization(freq1, freq2, bounds):
     """
@@ -154,9 +160,10 @@ def plot_performance(initial_params, optimized_params, freq1, freq2):
     freqs = np.linspace(800, 4000, 50)
     predictions = [forward_predict(np.append(np.array(optimized_params), f)) for f in freqs]
     s11 = [p[0] for p in predictions]
-    s21 = [p[1] for p in predictions]
     axs[0, 1].plot(freqs, s11, label='dB(S(1,1))')
-    axs[0, 1].plot(freqs, s21, label='dB(S(2,1))')
+    if INCLUDE_S21:
+        s21 = [p[1] for p in predictions]
+        axs[0, 1].plot(freqs, s21, label='dB(S(2,1))')
     axs[0, 1].axvline(freq1, color='r', linestyle='--', label=f'Freq1: {freq1} MHz')
     axs[0, 1].axvline(freq2, color='g', linestyle='--', label=f'Freq2: {freq2} MHz')
     axs[0, 1].set_title('Frequency Response')
@@ -167,29 +174,43 @@ def plot_performance(initial_params, optimized_params, freq1, freq2):
     # S-parameter Comparison at Freq1
     initial_pred_f1 = forward_predict(np.append(np.array(initial_params), freq1))
     opt_pred_f1 = forward_predict(list(optimized_params) + [freq1])
-    axs[1, 0].bar(['Freq1 S11', 'Freq1 S21'], [initial_pred_f1[0], initial_pred_f1[1]],
-                  width=0.4, label='Initial', alpha=0.6)
-    axs[1, 0].bar(['Freq1 S11', 'Freq1 S21'], [opt_pred_f1[0], opt_pred_f1[1]],
-                  width=0.4, label='Optimized', alpha=0.6)
-    axs[1, 0].axhline(-10, color='r', linestyle='--', label='S11 Target')
-    axs[1, 0].axhline(-1, color='g', linestyle='--', label='S21 Target')
+    if INCLUDE_S21:
+        axs[1, 0].bar(['Freq1 S11', 'Freq1 S21'], [initial_pred_f1[0], initial_pred_f1[1]],
+                      width=0.4, label='Initial', alpha=0.6)
+        axs[1, 0].bar(['Freq1 S11', 'Freq1 S21'], [opt_pred_f1[0], opt_pred_f1[1]],
+                      width=0.4, label='Optimized', alpha=0.6)
+        axs[1, 0].axhline(-15, color='r', linestyle='--', label='S11 Target')
+        axs[1, 0].axhline(-1, color='g', linestyle='--', label='S21 Target')
+    else:
+        axs[1, 0].bar(['Freq1 S11'], [initial_pred_f1[0]],
+                      width=0.4, label='Initial', alpha=0.6)
+        axs[1, 0].bar(['Freq1 S11'], [opt_pred_f1[0]],
+                      width=0.4, label='Optimized', alpha=0.6)
+        axs[1, 0].axhline(-15, color='r', linestyle='--', label='S11 Target')
     axs[1, 0].set_title('Freq1 S-parameter Comparison')
     axs[1, 0].legend()
 
     # S-parameter Comparison at Freq2
     initial_pred_f2 = forward_predict(np.append(np.array(initial_params), freq2))
     opt_pred_f2 = forward_predict(list(optimized_params) + [freq2])
-    axs[1, 1].bar(['Freq2 S11', 'Freq2 S21'], [initial_pred_f2[0], initial_pred_f2[1]],
-                  width=0.4, label='Initial', alpha=0.6)
-    axs[1, 1].bar(['Freq2 S11', 'Freq2 S21'], [opt_pred_f2[0], opt_pred_f2[1]],
-                  width=0.4, label='Optimized', alpha=0.6)
-    axs[1, 1].axhline(-10, color='r', linestyle='--', label='S11 Target')
-    axs[1, 1].axhline(-1, color='g', linestyle='--', label='S21 Target')
+    if INCLUDE_S21:
+        axs[1, 1].bar(['Freq2 S11', 'Freq2 S21'], [initial_pred_f2[0], initial_pred_f2[1]],
+                      width=0.4, label='Initial', alpha=0.6)
+        axs[1, 1].bar(['Freq2 S11', 'Freq2 S21'], [opt_pred_f2[0], opt_pred_f2[1]],
+                      width=0.4, label='Optimized', alpha=0.6)
+        axs[1, 1].axhline(-15, color='r', linestyle='--', label='S11 Target')
+        axs[1, 1].axhline(-1, color='g', linestyle='--', label='S21 Target')
+    else:
+        axs[1, 1].bar(['Freq2 S11'], [initial_pred_f2[0]],
+                      width=0.4, label='Initial', alpha=0.6)
+        axs[1, 1].bar(['Freq2 S11'], [opt_pred_f2[0]],
+                      width=0.4, label='Optimized', alpha=0.6)
+        axs[1, 1].axhline(-15, color='r', linestyle='--', label='S11 Target')
     axs[1, 1].set_title('Freq2 S-parameter Comparison')
     axs[1, 1].legend()
 
     plt.tight_layout()
-    plt.savefig(os.path.join(IMAGE_SAVE_DIR,'dual_frequency_analysis.png'))
+    plt.savefig(os.path.join(IMAGE_SAVE_DIR, 'dual_frequency_analysis.png'))
     plt.close()
 
 
@@ -205,7 +226,7 @@ def plot_design_parameters(initial_params, optimized_params):
     plt.ylabel('Length')
     plt.title('Frequency vs. Length')
     plt.legend()
-    plt.savefig(os.path.join(IMAGE_SAVE_DIR,'frequency_vs_length.png'))
+    plt.savefig(os.path.join(IMAGE_SAVE_DIR, 'frequency_vs_length.png'))
     plt.close()
 
     # Plot Spacings (s_2, s_1)
@@ -217,7 +238,7 @@ def plot_design_parameters(initial_params, optimized_params):
     plt.ylabel('Spacing')
     plt.title('Frequency vs. Spacing')
     plt.legend()
-    plt.savefig(os.path.join(IMAGE_SAVE_DIR,'frequency_vs_spacing.png'))
+    plt.savefig(os.path.join(IMAGE_SAVE_DIR, 'frequency_vs_spacing.png'))
     plt.close()
 
     # Plot Widths (w_s, w_2, w_1)
@@ -229,23 +250,31 @@ def plot_design_parameters(initial_params, optimized_params):
     plt.ylabel('Width')
     plt.title('Frequency vs. Width')
     plt.legend()
-    plt.savefig(os.path.join(IMAGE_SAVE_DIR,'frequency_vs_width.png'))
+    plt.savefig(os.path.join(IMAGE_SAVE_DIR, 'frequency_vs_width.png'))
     plt.close()
 
 
 def main():
-    print("Welcome to the Enhanced Prediction System!")
-    print("Choose a mode:")
-    print("1. Forward Prediction")
-    print("2. Inverse Prediction")
-    print("3. Dual-Frequency Optimization")
-    mode = input("Enter mode (forward/inverse/dual): ").strip().lower()
+    global INCLUDE_S21
 
-    if mode == "dual":
+    # Ask user whether to include dB S21 values using arrow key selection
+    include_choice = questionary.select(
+        "Include dB S21 values in predictions?",
+        choices=["Yes", "No"]
+    ).ask()
+    INCLUDE_S21 = True if include_choice == "Yes" else False
+
+    mode = questionary.select(
+        "Select a mode:",
+        choices=["Forward Prediction", "Inverse Prediction", "Dual-Frequency Optimization"]
+    ).ask()
+
+    if mode == "Dual-Frequency Optimization":
         print("\nDual-Frequency Optimization Mode:")
-        print("Enter 8 base parameters [l_s, l_2, l_1, s_2, s_1, w_s, w_2, w_1]")
-        print("Followed by two frequencies (comma-separated)")
-        input_str = input("Input (10 values total): ")
+        print("\nEnter 10 comma-separated values: 8 base parameters [l_s, l_2, l_1, s_2, s_1, "
+                       "w_s, w_2, w_1] followed by two frequencies:")
+        prompt_text = "Input:"
+        input_str = questionary.text(prompt_text).ask()
         parts = input_str.split(",")
         if len(parts) != 10:
             raise ValueError("Exactly 10 values required (8 params + 2 freqs)")
@@ -257,8 +286,12 @@ def main():
         init_pred_f1 = forward_predict(base_params + [freq1])
         init_pred_f2 = forward_predict(base_params + [freq2])
         print("\n--- Initial Predictions ---")
-        print(f"At {freq1} MHz: S11 = {init_pred_f1[0]:.2f}, S21 = {init_pred_f1[1]:.2f}")
-        print(f"At {freq2} MHz: S11 = {init_pred_f2[0]:.2f}, S21 = {init_pred_f2[1]:.2f}")
+        if INCLUDE_S21:
+            print(f"At {freq1} MHz: S11 = {init_pred_f1[0]:.2f}, S21 = {init_pred_f1[1]:.2f}")
+            print(f"At {freq2} MHz: S11 = {init_pred_f2[0]:.2f}, S21 = {init_pred_f2[1]:.2f}")
+        else:
+            print(f"At {freq1} MHz: S11 = {init_pred_f1[0]:.2f}")
+            print(f"At {freq2} MHz: S11 = {init_pred_f2[0]:.2f}")
         print("Initial Design Parameters:")
         print(format_design_parameters(base_params))
 
@@ -285,8 +318,12 @@ def main():
         final_pred_f1 = forward_predict(list(local_candidate) + [freq1])
         final_pred_f2 = forward_predict(list(local_candidate) + [freq2])
         print("\n--- Final Predictions ---")
-        print(f"At {freq1} MHz: S11 = {final_pred_f1[0]:.2f}, S21 = {final_pred_f1[1]:.2f}")
-        print(f"At {freq2} MHz: S11 = {final_pred_f2[0]:.2f}, S21 = {final_pred_f2[1]:.2f}")
+        if INCLUDE_S21:
+            print(f"At {freq1} MHz: S11 = {final_pred_f1[0]:.2f}, S21 = {final_pred_f1[1]:.2f}")
+            print(f"At {freq2} MHz: S11 = {final_pred_f2[0]:.2f}, S21 = {final_pred_f2[1]:.2f}")
+        else:
+            print(f"At {freq1} MHz: S11 = {final_pred_f1[0]:.2f}")
+            print(f"At {freq2} MHz: S11 = {final_pred_f2[0]:.2f}")
         print("Optimized Design Parameters:")
         print(format_design_parameters(local_candidate))
 
@@ -294,102 +331,69 @@ def main():
         plot_performance(base_params, local_candidate, freq1, freq2)
         plot_design_parameters(base_params, list(local_candidate))
 
-
-    elif mode == "forward":
-
+    elif mode == "Forward Prediction":
         print("\nForward Prediction Mode:")
-
-        print("Enter 9 comma-separated values [l_s, l_2, l_1, s_2, s_1, w_s, w_2, w_1, freq]")
-
-        input_str = input("Input: ")
-
+        print( "Enter 9 comma-separated values [l_s, l_2, l_1, s_2, s_1, w_s, w_2, w_1, freq]")
+        prompt_text = "Input:"
+        input_str = questionary.text(prompt_text).ask()
         try:
-
             input_params = parse_forward_input(input_str)
-
             predicted = forward_predict(input_params)
-
-            print(f"Model predicted output: {predicted}")
-
+            if INCLUDE_S21:
+                print(f"Model predicted output: {predicted}")
+            else:
+                print(f"Model predicted S11: {predicted[0]:.2f}")
         except ValueError as e:
-
             print(f"Error: {e}")
 
-
-    elif mode == "inverse":
-
+    elif mode == "Inverse Prediction":
         print("\nInverse Prediction Mode:")
-
-        print("Enter desired dB values for [dB(S(1,1)), dB(S(2,1))] (comma-separated)")
-
-        target_str = input("Target: ")
-
+        if INCLUDE_S21:
+            target_prompt = "Enter desired dB values for [dB(S(1,1)), dB(S(2,1))] (comma-separated)"
+        else:
+            target_prompt = "Enter desired dB value for [dB(S(1,1))]"
+        target_str = questionary.text(target_prompt).ask()
         try:
-
-            target = np.array([float(val) for val in target_str.split(",")])
-
-            if target.shape[0] != 2:
-                raise ValueError("Exactly 2 target values are required.")
-
+            if INCLUDE_S21:
+                target_vals = [float(val) for val in target_str.split(",")]
+                if len(target_vals) != 2:
+                    raise ValueError("Exactly 2 target values are required.")
+                target = np.array(target_vals)
+            else:
+                target = np.array([float(target_str)])
         except ValueError as e:
-
             print(f"Error: {e}")
-
             return
 
-        print("Enter an initial guess for 9 input parameters or press Enter for default.")
-
-        guess_str = input("Initial guess: ").strip()
-
+        print("Enter an initial guess for 9 input parameters or leave blank for default.")
+        guess_str = questionary.text("Initial guess (comma-separated, 9 values):").ask().strip()
         bounds = [
-
             (6, 13), (6, 25), (6, 25),
-
             (0.20, 0.6), (0.20, 0.6),
-
             (0.6, 1.8), (0.5, 2), (0.6, 2),
-
             (800, 4000)
-
         ]
-
         if not guess_str:
-
             initial_guess = [(lb + ub) / 2 for lb, ub in bounds]
-
             print(f"Using default guess: {initial_guess}")
-
         else:
-
             try:
-
                 initial_guess = parse_forward_input(guess_str)
-
             except ValueError as e:
-
                 print(f"Error: {e}")
-
                 return
 
         solution, error_val, accuracy_percentage = inverse_predict(target, initial_guess)
-
         formatted_values = [f"{val:.3f}" for val in solution[:-1]]
-
         freq_display = f"{solution[-1] / 1000:.3f} GHz" if solution[-1] >= 1000 else f"{solution[-1]:.3f} MHz"
-
         formatted_solution = ", ".join(formatted_values + [freq_display])
-
         print("\nOptimized Input Parameters:")
-
         print(formatted_solution)
-
         print(f"Final objective (error value): {error_val:.6f}")
-
         print(f"Accuracy: {accuracy_percentage:.2f}%")
 
     else:
-
-        print("Invalid mode. Please restart and choose 'forward', 'inverse', or 'dual'.")
+        print("Invalid mode. Please restart and choose a valid option.")
 
 
 if __name__ == "__main__":
