@@ -1,0 +1,11 @@
+digest: ed30b35c
+name: dataset
+profile: '{"features_shape": [13664, 9], "features_size": 122976, "features_nbytes":
+  491904, "targets_shape": [13664, 2], "targets_size": 27328, "targets_nbytes": 109312}'
+schema: '{"mlflow_tensorspec": {"features": "[{\"type\": \"tensor\", \"tensor-spec\":
+  {\"dtype\": \"float32\", \"shape\": [-1, 9]}}]", "targets": "[{\"type\": \"tensor\",
+  \"tensor-spec\": {\"dtype\": \"float32\", \"shape\": [-1, 2]}}]"}}'
+source: '{"tags": {"mlflow.user": "kayode-olalere", "mlflow.source.name": "/home/kayode-olalere/PycharmProjects/Project
+  ANN/Codebase/Model/VER_3/antenna_model.py", "mlflow.source.type": "LOCAL", "mlflow.source.git.commit":
+  "3a0ecacb38505329a44677e7a1d5fdf2659bea84"}}'
+source_type: code

@@ -18,16 +18,23 @@ from scipy import stats
 import mlflow
 import joblib
 from pathlib import Path
+from sklearn.linear_model import Ridge
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.pipeline import make_pipeline
+from pathlib import Path
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import RobustScaler, PolynomialFeatures
+from sklearn.linear_model import Ridge
+from sklearn.pipeline import make_pipeline
+from sklearn.metrics import r2_score, mean_absolute_error
+import mlflow.tensorflow
+import seaborn as sns
 
 
 # Suppress warnings
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 warnings.filterwarnings("ignore")
 
-
-# ========================
-# Configuration Parameters
-# ========================
 class Config:
     SEED = 42
     TEST_SIZE = 0.20
@@ -49,9 +56,7 @@ tf.random.set_seed(Config.SEED)
 IMAGE_SAVE_DIR = "Graphs"
 os.makedirs(IMAGE_SAVE_DIR, exist_ok=True)  # Create directory if it doesn't exist
 
-# =======================
-# Data Loading Fix
-# =======================
+
 def parse_frequency(freq_str):
     """Convert a frequency string with a unit (MHz or GHz) into a numeric value in MHz."""
 
@@ -125,9 +130,6 @@ def load_data(path, is_generated=False):
 
     return df
 
-# ======================
-# Enhanced Visualization
-# ======================
 def plot_individual_performance(y_true, y_pred, target_name):
     """Generate separate analysis for each target parameter."""
     plt.figure(figsize=(12, 5))
@@ -149,9 +151,6 @@ def plot_individual_performance(y_true, y_pred, target_name):
     plt.close()
 
 
-# ====================
-# Model Architecture
-# ====================
 def create_model(input_shape):
     inputs = Input(shape=(input_shape,))
 
@@ -166,9 +165,6 @@ def create_model(input_shape):
     outputs = Dense(len(Config.TARGET_COLS))(x)
     return Model(inputs, outputs)
 
-# ========================
-# Correlation Heatmap Plot
-# ========================
 def plot_correlation_heatmap(df ):
     """Plots a heatmap showing the correlation between features and target variables."""
     plt.figure(figsize=(12, 8))
@@ -184,56 +180,54 @@ def plot_correlation_heatmap(df ):
     plt.close()
     print(f"Correlation heatmap saved")
 
-# ===================
-# Training Pipeline
-# ===================
+
+
+
 def main():
-    # Find the project root dynamically
-    project_root = Path(__file__).resolve().parents[3]  # Go up 3 levels from script directory
+    project_root = Path(__file__).resolve().parents[3]
+    data_path = project_root / "Training_set" / "training_output_fixed.csv"
 
-    # Construct the correct data path
-    data_path = project_root / "Training_set" / "New_Training_set.csv"
-
-    # Check if the file exists before loading
     if not data_path.exists():
         raise FileNotFoundError(f"File not found: {data_path}")
 
-    # Convert Path object to string for compatibility
     train_df = load_data(str(data_path), is_generated=False)
 
-    # Prepare data
     X = train_df[Config.FEATURE_COLS].values.astype('float32')
     y = train_df[Config.TARGET_COLS].values.astype('float32')
 
-    # Split data
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=Config.TEST_SIZE, random_state=Config.SEED)
-    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=Config.VAL_SIZE,
-                                                      random_state=Config.SEED)
+    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=Config.VAL_SIZE, random_state=Config.SEED)
 
-    # Feature scaling
     scaler = RobustScaler()
     X_train_scaled = scaler.fit_transform(X_train)
     X_val_scaled = scaler.transform(X_val)
     X_test_scaled = scaler.transform(X_test)
     joblib.dump(scaler, 'scaler.pkl')
 
-    # MLflow setup
+    def detect_out_of_bounds(X_train, X_input):
+        bounds_min = np.min(X_train, axis=0)
+        bounds_max = np.max(X_train, axis=0)
+        out_of_bounds_mask = (X_input < bounds_min) | (X_input > bounds_max)
+        return out_of_bounds_mask.any(axis=1)
+
+    extrapolation_flags = detect_out_of_bounds(X_train_scaled, X_test_scaled)
+    num_extrapolated = np.sum(extrapolation_flags)
+    if num_extrapolated > 0:
+        print(f"[Warning] {num_extrapolated} samples in test set are outside training distribution bounds.")
+
     mlflow.set_tracking_uri("mlruns")
     mlflow.tensorflow.autolog()
 
     with mlflow.start_run():
-        # Build and compile model
         model = create_model(X_train_scaled.shape[1])
         model.compile(optimizer=Adam(0.001), loss='mse', metrics=['mae'])
 
-        # Callbacks
         callbacks = [
             EarlyStopping(patience=Config.EARLY_STOPPING_PATIENCE, restore_best_weights=True),
             ReduceLROnPlateau(patience=Config.REDUCE_LR_PATIENCE, factor=0.5),
             ModelCheckpoint(Config.CHECKPOINT_PATH, save_best_only=True)
         ]
 
-        # Train model
         history = model.fit(
             X_train_scaled, y_train,
             validation_data=(X_val_scaled, y_val),
@@ -243,16 +237,32 @@ def main():
             verbose=1
         )
 
-        # Evaluate
         test_pred = model.predict(X_test_scaled)
 
-        # Calculate metrics
+        if num_extrapolated > 0:
+            poly_model = make_pipeline(PolynomialFeatures(degree=3), Ridge(alpha=1.0))
+            poly_model.fit(X_train_scaled, y_train)
+
+            X_extra = X_test_scaled[extrapolation_flags]
+            y_extra_true = y_test[extrapolation_flags]
+            y_extra_pred = poly_model.predict(X_extra)
+
+            r2_extra = [r2_score(y_extra_true[:, i], y_extra_pred[:, i]) for i in range(2)]
+            print("\n=== Polynomial Fallback Model (Extrapolation Region) ===")
+            for i, target in enumerate(Config.TARGET_COLS):
+                print(f"{target}:")
+                print(f"- Fallback R²: {r2_extra[i]:.2f}")
+
+            test_pred[extrapolation_flags] = y_extra_pred
+
+            extrapolated_df = pd.DataFrame(X_test[extrapolation_flags], columns=Config.FEATURE_COLS)
+            extrapolated_df.to_csv("extrapolated_inputs.csv", index=False)
+
         r2_scores = [r2_score(y_test[:, i], test_pred[:, i]) for i in range(2)]
         mae_scores = [mean_absolute_error(y_test[:, i], test_pred[:, i]) for i in range(2)]
 
         plot_correlation_heatmap(train_df)
 
-        # Layman-friendly output
         print("\n=== Final Performance ===")
         print(f"Overall Accuracy: {np.mean(r2_scores) * 100:.1f}%")
         print(f"Average Error: {np.mean(mae_scores):.2f} dB")
@@ -263,7 +273,6 @@ def main():
             print(f"- Average Error: {mae_scores[i]:.2f} dB")
             plot_individual_performance(y_test[:, i], test_pred[:, i], target)
 
-        # Frequency analysis
         plt.figure(figsize=(10, 6))
         for target in Config.TARGET_COLS:
             sns.lineplot(x=train_df['freq'], y=train_df[target], label=target, errorbar=None)
@@ -271,42 +280,30 @@ def main():
         plt.xlabel("Frequency (MHz)")
         plt.ylabel("dB Magnitude")
         plt.legend()
-        plt.savefig(os.path.join(IMAGE_SAVE_DIR,"frequency_response.png"))
+        plt.savefig(os.path.join(IMAGE_SAVE_DIR, "frequency_response.png"))
         plt.close()
 
-        # === After model.fit() and evaluation ===
+        hidden_layers = [layer for layer in model.layers if isinstance(layer, Dense)][:-1]
+        num_hidden_layers = len(hidden_layers)
+        neurons_per_layer = [layer.units for layer in hidden_layers]
+        activations = [layer.activation.__name__ for layer in hidden_layers]
 
-        # Extract model architecture details dynamically
-    hidden_layers = [layer for layer in model.layers if isinstance(layer, Dense)][:-1]  # Exclude output layer
-    num_hidden_layers = len(hidden_layers)
-    neurons_per_layer = [layer.units for layer in hidden_layers]
-    activations = [layer.activation.__name__ for layer in hidden_layers]
+        print("\n=== Model Hyperparameters and Training Info ===")
+        print(f"Activation function (hidden layers): {activations}")
+        print(f"Number of hidden layers: {num_hidden_layers}")
+        print(f"Neurons in each hidden layer: {neurons_per_layer}")
 
-    # Print hyperparameters and training info
-    print("\n=== Model Hyperparameters and Training Info ===")
-    print(f"Activation function (hidden layers): {activations}")
-    print(f"Number of hidden layers: {num_hidden_layers}")
-    print(f"Neurons in each hidden layer: {neurons_per_layer}")
+        initial_lr = model.optimizer.learning_rate.numpy()
+        print(f"Initial learning rate: {initial_lr:.6f}")
 
-    # Get initial learning rate
-    initial_lr = model.optimizer.learning_rate.numpy()
-    print(f"Initial learning rate: {initial_lr:.6f}")
+        if isinstance(model.optimizer.learning_rate, tf.keras.optimizers.schedules.LearningRateSchedule):
+            final_lr = model.optimizer.learning_rate(tf.keras.backend.get_value(model.optimizer.iterations)).numpy()
+        else:
+            final_lr = tf.keras.backend.get_value(model.optimizer.learning_rate)
 
-    # Obtain the current (final) learning rate from the optimizer
-    if isinstance(model.optimizer.learning_rate, tf.keras.optimizers.schedules.LearningRateSchedule):
-        final_lr = model.optimizer.learning_rate(tf.keras.backend.get_value(model.optimizer.iterations)).numpy()
-    else:
-        final_lr = tf.keras.backend.get_value(model.optimizer.learning_rate)
-
-    print(f"Best (final) learning rate: {final_lr:.6f}")
-
-    # The number of epochs run is the length of the training history.
-    epochs_run = len(history.history['loss'])
-    print(f"Number of epochs run: {epochs_run}")
-
-    # Print the optimizer (adaptive learning function)
-    print(f"Adaptive learning function (optimizer): {type(model.optimizer).__name__}")
-
+        print(f"Best (final) learning rate: {final_lr:.6f}")
+        print(f"Number of epochs run: {len(history.history['loss'])}")
+        print(f"Adaptive learning function (optimizer): {type(model.optimizer).__name__}")
 
 if __name__ == "__main__":
     main()

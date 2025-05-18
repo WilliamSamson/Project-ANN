@@ -15,7 +15,7 @@ import concurrent.futures
 INCLUDE_S21 = True
 
 IMAGE_SAVE_DIR = "Graphs"
-os.makedirs(IMAGE_SAVE_DIR, exist_ok=True)  # Create directory if it doesn't exist
+os.makedirs(IMAGE_SAVE_DIR, exist_ok=True)
 
 # Load Model & Scaler
 project_root = Path(__file__).resolve().parents[1]
@@ -33,7 +33,7 @@ scaler = joblib.load(str(data_path2))
 
 
 def parse_forward_input(input_str):
-    """Parse and validate 9 comma-separated input values."""
+
     parts = input_str.split(",")
     if len(parts) != 9:
         raise ValueError("Exactly 9 values are required.")
@@ -46,7 +46,7 @@ def parse_forward_input(input_str):
 
 
 def calculate_accuracy(actual, predicted):
-    """Compute accuracy using a normalized error approach."""
+
     actual = np.array(actual, dtype=np.float32)
     predicted = np.array(predicted, dtype=np.float32)
     denominator = np.maximum(np.maximum(np.abs(actual), np.abs(predicted)), 1e-6)
@@ -57,7 +57,7 @@ def calculate_accuracy(actual, predicted):
 
 
 def inverse_predict(target, initial_guess):
-    """Optimize input parameters to match desired target output."""
+
     def objective(x):
         pred = forward_predict(x)
         return np.sum((pred - target) ** 2)
@@ -79,7 +79,7 @@ def inverse_predict(target, initial_guess):
 
 
 def parse_frequency(freq_str):
-    """Convert frequency string (MHz/GHz) to numeric MHz value."""
+
     if isinstance(freq_str, str):
         freq_str = freq_str.strip().lower()
         match = re.match(r"([\d.]+)\s*(ghz|mhz)?", freq_str)
@@ -92,7 +92,7 @@ def parse_frequency(freq_str):
 
 
 def forward_predict(input_params):
-    """Scale input and predict output using the model."""
+
     if len(input_params) != 9:
         raise ValueError(f"Expected 9 features, got {len(input_params)}")
     input_arr = np.array(input_params, dtype='float32').reshape(1, -1)
@@ -106,63 +106,54 @@ def forward_predict(input_params):
 
 def dual_objective(x, freq1, freq2):
     if INCLUDE_S21:
-        target = np.array([-15, -1, -15, -1], dtype=np.float32)
+        target = np.array([-30, -3, -30, -3], dtype=np.float32)  # Updated targets
     else:
-        target = np.array([-15, -15], dtype=np.float32)
+        target = np.array([-30, -30], dtype=np.float32)
 
-    # Explicit reshaping (optional)
+    # Bounds validation
+    x = np.clip(x, [6, 6, 6, 0.15, 0.15, 0.5, 0.5, 0.5], [13, 25, 25, 0.6, 0.6, 2, 2, 2])
+
     input_f1 = np.append(x, freq1).astype('float32').reshape(1, -1)
     input_f2 = np.append(x, freq2).astype('float32').reshape(1, -1)
 
-    # Flatten before calling forward_predict since it expects a 9-element vector
     pred_f1 = forward_predict(input_f1.flatten())
     pred_f2 = forward_predict(input_f2.flatten())
 
     combined_pred = np.concatenate([pred_f1, pred_f2])
     return np.sum((combined_pred - target) ** 2)
 
+
 def global_dual_frequency_optimization(freq1, freq2, bounds):
-    """
-    Global optimization using differential evolution to search broadly for the design parameters.
-    """
     result = differential_evolution(dual_objective, bounds=bounds, args=(freq1, freq2),
-                                    strategy='best1bin', maxiter=100, popsize=15,
-                                    tol=0.01, mutation=(0.5, 1), recombination=0.7)
+                                    strategy='best1bin', maxiter=150, popsize=20,
+                                    tol=0.005, mutation=(0.4, 1), recombination=0.8)
     return result.x, result.fun
 
 
 def local_dual_frequency_optimization(initial_guess, freq1, freq2, bounds):
-    """
-    Local optimization using L-BFGS-B for fine-tuning starting from an initial candidate.
-    """
-    res = minimize(dual_objective, x0=initial_guess, args=(freq1, freq2), bounds=bounds, method='L-BFGS-B')
+    try:
+        res = minimize(dual_objective, x0=initial_guess, args=(freq1, freq2),
+                       bounds=bounds, method='L-BFGS-B')
+        if not res.success:
+            res = minimize(dual_objective, x0=initial_guess, args=(freq1, freq2),
+                           method='COBYLA', constraints={'type': 'ineq', 'fun': lambda x: 1})
+    except Exception as e:
+        print(f"Local optimization failed: {str(e)}")
+        return initial_guess, np.inf
     return res.x, res.fun
 
 
 def evaluate_bounds(b, freq1, freq2):
-    """
-    Evaluate a single bounds configuration.
-    Returns a tuple containing:
-      - the bounds configuration,
-      - the global candidate,
-      - the global error,
-      - the local candidate,
-      - the local error,
-      - final predictions at freq1,
-      - final predictions at freq2.
-    """
+
     global_candidate, global_error = global_dual_frequency_optimization(freq1, freq2, b)
     local_candidate, local_error = local_dual_frequency_optimization(global_candidate, freq1, freq2, b)
     final_pred_f1 = forward_predict(list(local_candidate) + [freq1])
     final_pred_f2 = forward_predict(list(local_candidate) + [freq2])
-    return (b, global_candidate, global_error, local_candidate, local_error, final_pred_f1, final_pred_f2)
+    return b, global_candidate, global_error, local_candidate, local_error, final_pred_f1, final_pred_f2
 
 
 def run_possible_bounds(freq1, freq2):
-    """
-    Tests several bounds configurations concurrently and returns the best bounds (i.e. with the lowest global error)
-    along with its corresponding local candidate.
-    """
+
     possible_bounds = [
         [(6, 13), (7, 25), (7, 25),
          (0.15, 0.6), (0.15, 0.6),
@@ -203,13 +194,13 @@ def run_possible_bounds(freq1, freq2):
 
 
 def format_design_parameters(params):
-    """Return a friendly formatted string of design parameters."""
+
     names = ['l_s', 'l_2', 'l_1', 's_2', 's_1', 'w_s', 'w_2', 'w_1']
     return ", ".join([f"{name}: {float(val):.3f}" for name, val in zip(names, params)])
 
 
 def plot_performance(initial_params, optimized_params, freq1, freq2):
-    """Generate plots for frequency response vs frequency and S-parameter comparisons."""
+
     fig, axs = plt.subplots(2, 2, figsize=(15, 12))
 
     # Parameter Comparison Bar Chart
@@ -280,7 +271,7 @@ def plot_performance(initial_params, optimized_params, freq1, freq2):
 
 
 def plot_design_parameters(initial_params, optimized_params):
-    """Plot design parameters vs. frequency (displayed as constant horizontal lines)."""
+
     freqs = np.linspace(800, 4000, 50)
     # Plot Lengths (l_s, l_2, l_1)
     plt.figure(figsize=(10, 6))

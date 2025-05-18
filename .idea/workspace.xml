@@ -5,32 +5,50 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="436eae41-c0b7-44fc-8ae2-e59535a37f9b" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/Project ANN.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/csv-editor.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/material_theme_project_new.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Active and Passive Electronic Components - 2024 - Roshani - Design of a Microwave Quadrature Hybrid Coupler with Harmonic.pdf" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Codebase/Model/Dataset_generation.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Codebase/Model/main.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Dataset.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Trainning Dataset.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/s00521-021-06879-7-1.pdf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Codebase/Model/VER_3/prediction_script/graph_gen_pred.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Codebase/Model/VER_3/prediction_script/test/linear_scale.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Codebase/Model/VER_3/prediction_script/test/new_approach.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Codebase/Model/VER_3/test.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/Project ANN.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Project ANN.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/csv-editor.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/csv-editor.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/material_theme_project_new.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/material_theme_project_new.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Codebase/Model/VER_3/antenna_model.py" beforeDir="false" afterPath="$PROJECT_DIR$/Codebase/Model/VER_3/antenna_model.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Codebase/Model/VER_3/best_model.h5" beforeDir="false" afterPath="$PROJECT_DIR$/Codebase/Model/VER_3/best_model.h5" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Codebase/Model/VER_3/prediction_script/Optimised_prediction.py" beforeDir="false" afterPath="$PROJECT_DIR$/Codebase/Model/VER_3/prediction_script/Opt_prediction.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Codebase/Model/VER_3/scaler.pkl" beforeDir="false" afterPath="$PROJECT_DIR$/Codebase/Model/VER_3/scaler.pkl" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 6
-}]]></component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;WilliamSamson&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/WilliamSamson/Project-ANN.git&quot;,
+    &quot;accountId&quot;: &quot;f0bf9f7e-1e9d-4b98-8f56-dce2c0698da6&quot;
+  }
+}</component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 6
+}</component>
   <component name="ProjectId" id="2s4wovHNWcB9x0IWJYxc5hqlYcz" />
   <component name="ProjectLevelVcsManager" settingsEditedManually="true">
     <ConfirmationsSetting value="2" id="Add" />
@@ -42,21 +60,109 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "Python.Opt_prediction.executor": "Run",
+    "Python.Optimised_prediction.executor": "Run",
+    "Python.antenna_model.executor": "Run",
+    "Python.antenna_model2.executor": "Run",
+    "Python.append_freq.executor": "Run",
+    "Python.coupled_model.executor": "Run",
+    "Python.graph_gen_pred.executor": "Run",
+    "Python.hybrid.executor": "Run",
+    "Python.merge.executor": "Run",
+    "Python.new_approach.executor": "Run",
+    "Python.prediction.executor": "Run",
+    "Python.test.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
     "SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "git-widget-placeholder": "master"
+    "git-widget-placeholder": "master",
+    "last_opened_file_path": "/home/kayode-olalere/PycharmProjects/Project ANN/Codebase/Model/VER_3/prediction_script",
+    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable"
   }
 }]]></component>
   <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/Codebase/Model/VER_3/prediction_script" />
+      <recent name="$PROJECT_DIR$/Codebase/Model/Sec/Prediction" />
+      <recent name="$PROJECT_DIR$/Codebase/Model/Sec" />
+    </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/Codebase/Model/Sec/Model" />
       <recent name="$PROJECT_DIR$/Codebase/Model" />
     </key>
+  </component>
+  <component name="RunManager">
+    <configuration name="Opt_prediction" type="PythonConfigurationType" factoryName="Python" nameIsGenerated="true">
+      <module name="Project ANN" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Codebase/Model/VER_3/prediction_script" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Codebase/Model/VER_3/prediction_script/Opt_prediction.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="true" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="Optimised_prediction" type="PythonConfigurationType" factoryName="Python" nameIsGenerated="true">
+      <module name="Project ANN" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Codebase/Model/VER_3/prediction_script" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Codebase/Model/VER_3/prediction_script/Optimised_prediction.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="true" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="prediction" type="PythonConfigurationType" factoryName="Python" nameIsGenerated="true">
+      <module name="Project ANN" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Codebase/Model/Sec/Prediction" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Codebase/Model/Sec/Prediction/prediction.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="true" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
   </component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-python-sdk-495700d161d3-aa17d162503b-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-243.22562.220" />
+        <option value="bundled-python-sdk-14705d77f0bb-aa17d162503b-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-243.25659.43" />
       </set>
     </attachedChunks>
   </component>
